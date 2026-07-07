@@ -7,18 +7,42 @@ Classify each user message **before** calling `search_memories`. Do not search e
 | **S0** | User explicitly asks to recall | "你记得吗" "之前 auth 怎么定的" | `search_memories(domain=coding, query_text=...)` |
 | **S1** | Cross-project planning | "今天该做什么" | search without `session_id`; `limit=10` |
 | **S2** | Project work but repo unclear | No project name in message | Clarify repo → search with `session_id` |
-| **S3** | Project task start (implicit) | "继续 MCP 挂载" | `domain=coding`, `session_id=repo`, **required query_text** |
+| **S3** | Project-bound technical work | "继续 MCP 挂载" "记忆模块有哪些" "L1-L5 怎么分层" | `domain=coding`, `session_id=repo`, **required query_text** |
 | **S4** | Before architecture / cross-module edits | "改 middleware 顺序" | query expresses intent |
 | **S5** | Debugging recurring symptom | "又 502 了" | query with symptom keywords |
 | **S6** | Before `delete_memory` | User wants to delete | search to obtain `memory_id` |
-| **S-skip** | Narrow fix / trivia | typo, indent, "1+1" | **Do not search** |
+| **S-skip** | Narrow fix / unrelated trivia only | typo, indent, "1+1" | **Do not search** |
+
+## Project technical questions (S3)
+
+When `session_id` is known, classify as **S3** (not S-skip) if the user asks about:
+
+- Module layout or responsibilities ("记忆模块有哪些")
+- Architecture, layers, or design ("L1-L5 怎么分层")
+- Project conventions or past technical decisions in this repo
+
+Flow: **search first** → verify hits vs code/AGENTS.md → then read codebase. Memories supplement code; they do not replace verification.
+
+## S-skip (narrow only)
+
+Use S-skip **only** for:
+
+- Typo or single-line formatting/indent fixes
+- Unrelated chit-chat with no project context
+- Generic syntax with zero project context (e.g. "Python list comprehension syntax")
+
+## Do NOT classify as S-skip
+
+- "模块有哪些" / "架构是什么" / project overview questions
+- Any technical discussion when `session_id` applies
+- Recalling historical decisions or lessons (use S0 or S3 search instead)
 
 ## Do NOT search
 
-- Generic syntax questions answerable without project context
 - Unrelated trivia
 - Every turn automatically
-- Facts already in AGENTS.md / CLAUDE.md
+
+**Note:** AGENTS.md may contain static conventions — you may still **search** for historical **decisions, lessons, or corrections** not fully captured there.
 
 ## Recommended call
 

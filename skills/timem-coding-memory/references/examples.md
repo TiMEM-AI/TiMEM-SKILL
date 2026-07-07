@@ -11,7 +11,7 @@
 1. `search_memories(query_text="MCP 挂载 配置", domain="coding", session_id="timem-mcp", limit=5)`
 2. Verify hits vs repo code and AGENTS.md
 3. Read/edit codebase
-4. Rubric check → create if durable decision made
+4. WRITE EVAL → create if durable decision made
 
 ## Example 2 — S-skip (no search)
 
@@ -22,7 +22,7 @@
 **Actions:**
 
 1. Do **not** call `search_memories`
-2. Fix indent; skip create (one-off patch)
+2. Fix indent; WRITE EVAL → skip create (one-off patch)
 
 ## Example 3 — Explicit remember (create)
 
@@ -52,3 +52,16 @@
 
 1. `search_memories(query_text="auth 架构 决策", domain="coding", session_id="timem-mcp", limit=10)`
 2. Answer from verified memories only
+
+## Example 6 — Project module overview (S3, not S-skip)
+
+**User:** "给我说一下记忆相关的模块"
+
+**Tier:** S3 (project technical question — **not** S-skip)
+
+**Actions:**
+
+1. `search_memories(query_text="记忆模块 架构 L1 L5", domain="coding", session_id="timem-platform-backend", limit=5)`
+2. Verify hits vs code; if count=0, proceed to read `app/memory_management` and `core/timem_core`
+3. Answer combining verified memories + codebase
+4. WRITE EVAL → skip create unless a new durable conclusion emerged

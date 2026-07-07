@@ -4,7 +4,6 @@ description: >-
   Orchestrates TiMEM coding-scene memory recall and persistence via MCP atomic tools.
   Use when TiMEM MCP is connected and the user is doing software development, debugging,
   architecture decisions, or asks to recall technical context (代码, 调试, 架构, repo, 之前怎么定的).
-paths: "**/*.{py,ts,tsx,js,jsx,go,rs,java,kt,cs,cpp,h,c,hpp,md,json,yml,yaml,toml}"
 ---
 
 # TiMEM Coding Memory
@@ -32,9 +31,10 @@ Static repo rules → **AGENTS.md** / **CLAUDE.md**. Dynamic decisions and lesso
 - [ ] 2. If not S-skip → search_memories BEFORE exploratory codebase grep/read
 - [ ] 3. Verify hits vs current code and AGENTS.md
 - [ ] 4. Codebase work (read, grep, edit)
-- [ ] 5. Write rubric check (references/write-rubric.md)
-- [ ] 6. If pass → create_memory with memory_hint when applicable
-- [ ] 7. On task closure → create_memory with 4–8 turn summary (see below)
+- [ ] 5. WRITE EVAL (required before user-visible reply)
+      - If create: memory_hint + 2-4 turns → create_memory
+      - If skip: one-line reason (e.g. one-off patch, no durable conclusion)
+- [ ] 6. On task closure → create_memory with 4–8 turn summary if needed (see below)
 ```
 
 ## Search (summary)
@@ -44,7 +44,8 @@ Classify tier **before** searching. Do not search every turn.
 | Tier | Action |
 |------|--------|
 | S0–S6 | Search when tier table says so |
-| S-skip | Do **not** search (typo, trivia, narrow fix) |
+| **S3** | Includes project module/architecture/design questions — **search first**, then read code |
+| S-skip | **Only** typo, single-line format, unrelated trivia, zero-project syntax |
 
 Details: [references/search-tier.md](references/search-tier.md)
 
@@ -59,15 +60,18 @@ Details: [references/search-tier.md](references/search-tier.md)
 
 ## Write (summary)
 
-Create when rubric passes: decisions, constraints, lessons, conventions worth keeping across sessions.
+**WRITE EVAL every turn** before reply. Create when **required** rubric passes (see [write-rubric.md](references/write-rubric.md)):
 
-Details: [references/write-rubric.md](references/write-rubric.md)
+- cross_session_durable + actionable + non_noise (required)
+- non_redundant is advisory only
+
+Implicit creates OK: confirmed technical conclusions without "请记住".
 
 Max **0–5** memories per task (decision≤2, lesson≤2, other≤1).
 
 ## Closure
 
-Run when: user signals done; sub-task complete; topic shift; 3+ substantive turns without durable write.
+Run when: user signals done; sub-task complete; topic shift; **≥3 substantive turns** with conclusions and no durable write yet.
 
 ```
 create_memory(
@@ -81,7 +85,9 @@ create_memory(
 ## Anti-patterns
 
 - Do **not** call `should_search_memories`, `should_create_memory`, `begin_coding_turn`, `end_coding_turn`
-- Do **not** search on S-skip or every turn automatically
+- Do **not** classify project overview / module questions as S-skip
+- Do **not** search every turn automatically
+- Do **not** skip WRITE EVAL silently
 - Do **not** paste full files or logs into `messages`
 
 ## References
