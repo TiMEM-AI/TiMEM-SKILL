@@ -9,7 +9,7 @@ When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the
 1. Search Tier → if not S-skip, `search_memories` **before** codebase grep/read (S3 includes module/architecture questions)
 2. Verify hits vs code and AGENTS.md
 3. Codebase work
-4. **WRITE EVAL** before reply → `create_memory` when required rubric passes; skip with reason if not
+4. **WRITE EVAL** before reply → **default create** for code-verified project knowledge; skip only on noise floor
 5. Closure: `create_memory` with 4–8 turns when segment ends (≥3 substantive turns OK)
 
 ### Rules
@@ -17,6 +17,6 @@ When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the
 - Use `search_memories` / `create_memory` / `delete_memory` only
 - Do **not** use `should_*`, `begin_coding_turn`, or `end_coding_turn`
 - Do **not** treat project overview questions as S-skip
-- Static conventions → AGENTS.md; dynamic decisions → TiMEM (`domain=coding`)
+- AGENTS.md = team conventions; TiMEM = decisions + **code-verified project orientation** (`domain=coding`)
 
 Canonical skill: timem-skill `skills/timem-coding-memory/`

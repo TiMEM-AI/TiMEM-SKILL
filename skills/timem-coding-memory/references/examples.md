@@ -11,7 +11,7 @@
 1. `search_memories(query_text="MCP 挂载 配置", domain="coding", session_id="timem-mcp", limit=5)`
 2. Verify hits vs repo code and AGENTS.md
 3. Read/edit codebase
-4. WRITE EVAL → create if durable decision made
+4. WRITE EVAL → create if durable decision or verified orientation emerges
 
 ## Example 2 — S-skip (no search)
 
@@ -22,7 +22,7 @@
 **Actions:**
 
 1. Do **not** call `search_memories`
-2. Fix indent; WRITE EVAL → skip create (one-off patch)
+2. Fix indent; WRITE EVAL → skip create (noise floor: one-off patch)
 
 ## Example 3 — Explicit remember (create)
 
@@ -53,7 +53,7 @@
 1. `search_memories(query_text="auth 架构 决策", domain="coding", session_id="timem-mcp", limit=10)`
 2. Answer from verified memories only
 
-## Example 6 — Project module overview (S3, not S-skip)
+## Example 6 — Project module overview (S3, default create)
 
 **User:** "给我说一下记忆相关的模块"
 
@@ -62,6 +62,36 @@
 **Actions:**
 
 1. `search_memories(query_text="记忆模块 架构 L1 L5", domain="coding", session_id="timem-platform-backend", limit=5)`
-2. Verify hits vs code; if count=0, proceed to read `app/memory_management` and `core/timem_core`
+2. Verify hits vs code; if count=0 or incomplete, read `app/memory_management` and `core/timem_core`
 3. Answer combining verified memories + codebase
-4. WRITE EVAL → skip create unless a new durable conclusion emerged
+4. WRITE EVAL → **default `create_memory`** (`memory_hint=convention`): module names, paths, roles (≤10 bullets OK)
+5. If search already has highly similar complete entry → skip duplicate only
+
+## Example 7 — Noise floor (skip)
+
+**User:** "把这行缩进改一下"
+
+**Tier:** S-skip
+
+**Actions:**
+
+1. Fix indent; WRITE EVAL → skip (noise floor: one-off patch)
+
+**User:** "我猜记忆都存在 redis 里" (agent has not read code)
+
+**Actions:**
+
+1. WRITE EVAL → skip create until verified from codebase (noise floor: unverified guess)
+
+## Example 8 — Data flow orientation (S3, default create)
+
+**User:** "记忆创建 API 的调用链是怎样的？"
+
+**Tier:** S3
+
+**Actions:**
+
+1. `search_memories(query_text="记忆创建 API 调用链", domain="coding", session_id="timem-platform-backend", limit=5)`
+2. Trace code (router → service → core)
+3. Answer with call chain
+4. WRITE EVAL → **default `create_memory`** (`memory_hint=convention`) unless highly similar memory exists

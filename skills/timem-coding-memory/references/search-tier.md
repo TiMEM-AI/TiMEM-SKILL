@@ -23,6 +23,8 @@ When `session_id` is known, classify as **S3** (not S-skip) if the user asks abo
 
 Flow: **search first** → verify hits vs code/AGENTS.md → then read codebase. Memories supplement code; they do not replace verification.
 
+After a code-verified answer with `likely_reuse`, apply write-rubric **`project_discovery`** — default create (`memory_hint=convention`). See [write-rubric.md](write-rubric.md).
+
 ## S-skip (narrow only)
 
 Use S-skip **only** for:
@@ -63,4 +65,4 @@ After S-skip: proceed directly to codebase work.
 
 ## Empty results
 
-Zero hits does **not** mean create immediately. Work from code; apply write rubric when a durable decision or lesson emerges.
+Zero hits: work from code, then apply write rubric — verified project orientation with `likely_reuse` defaults to **create** (`project_discovery`).

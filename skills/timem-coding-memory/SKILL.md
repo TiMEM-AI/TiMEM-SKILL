@@ -22,7 +22,9 @@ Orchestrate **coding** scene (`domain=coding`, `expert_id=coder`) memory search 
 | `domain` | `coding` |
 | `session_id` | **Required** — stable repo/project name (e.g. `timem-mcp`), not random UUID per turn |
 
-Static repo rules → **AGENTS.md** / **CLAUDE.md**. Dynamic decisions and lessons → TiMEM coder space.
+**AGENTS.md / CLAUDE.md** — team-reviewed, long-stable conventions.
+
+**TiMEM** — agent-retrievable project knowledge: **decisions, lessons, preferences, code-verified module/architecture orientation**.
 
 ## Per-turn checklist
 
@@ -32,8 +34,8 @@ Static repo rules → **AGENTS.md** / **CLAUDE.md**. Dynamic decisions and lesso
 - [ ] 3. Verify hits vs current code and AGENTS.md
 - [ ] 4. Codebase work (read, grep, edit)
 - [ ] 5. WRITE EVAL (required before user-visible reply)
-      - If create: memory_hint + 2-4 turns → create_memory
-      - If skip: one-line reason (e.g. one-off patch, no durable conclusion)
+      - Default: project-bound + verified + likely_reuse → create_memory (convention)
+      - If skip: one-line reason from noise floor only
 - [ ] 6. On task closure → create_memory with 4–8 turn summary if needed (see below)
 ```
 
@@ -60,14 +62,15 @@ Details: [references/search-tier.md](references/search-tier.md)
 
 ## Write (summary)
 
-**WRITE EVAL every turn** before reply. Create when **required** rubric passes (see [write-rubric.md](references/write-rubric.md)):
+**WRITE EVAL every turn** before reply. See [write-rubric.md](references/write-rubric.md).
 
-- cross_session_durable + actionable + non_noise (required)
-- non_redundant is advisory only
+- **Required:** `project_bound` + `likely_reuse`
+- **Advisory:** `bounded_content`, `freshness_ok`, `non_duplicate`
+- **Default bias:** code-verified project answers → **create**; skip only on noise floor
 
-Implicit creates OK: confirmed technical conclusions without "请记住".
+Implicit creates OK: confirmed conclusions, module/arch maps (`memory_hint=convention`) without "请记住".
 
-Max **0–5** memories per task (decision≤2, lesson≤2, other≤1).
+Max **0–8** memories per task (decision≤2, lesson≤2, convention≤3, other≤1).
 
 ## Closure
 
@@ -77,7 +80,7 @@ Run when: user signals done; sub-task complete; topic shift; **≥3 substantive 
 create_memory(
   domain="coding",
   session_id="<repo-name>",
-  memory_hint="decision|lesson|...",
+  memory_hint="decision|lesson|convention|...",
   messages=[4–8 recent user/assistant turns from the task],
 )
 ```
@@ -86,6 +89,7 @@ create_memory(
 
 - Do **not** call `should_search_memories`, `should_create_memory`, `begin_coding_turn`, `end_coding_turn`
 - Do **not** classify project overview / module questions as S-skip
+- Do **not** skip create for verified project orientation ("just read code" is not a valid reason)
 - Do **not** search every turn automatically
 - Do **not** skip WRITE EVAL silently
 - Do **not** paste full files or logs into `messages`
