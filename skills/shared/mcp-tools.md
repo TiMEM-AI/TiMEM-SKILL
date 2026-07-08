@@ -86,6 +86,69 @@ Returns `scene`, `expert_id`, `confidence`. If confidence is low, default to `ge
 
 ---
 
+---
+
+## `list_knowledge_bases`
+
+List all knowledge bases for the current user.
+
+| Parameter | Required | Notes |
+|-----------|----------|-------|
+| `user_id` | No | Overrides env default |
+
+Returns `knowledge_bases[]` with `id`, `name`, `description`, `is_default`, `file_count`, `created_at`.
+
+---
+
+## `search_knowledge`
+
+Semantic search within a knowledge base (BM25 hybrid retrieval with keyword boost).
+
+| Parameter | Required | Notes |
+|-----------|----------|-------|
+| `query` | **Yes** | Natural language question |
+| `kb_id` | No | Omit to use default KB |
+| `user_id` | No | Overrides env default |
+
+Example:
+```
+search_knowledge(query="API 认证方案")
+```
+
+---
+
+## `upload_document`
+
+Upload a document to a knowledge base. Processing is async — returns immediately with `pending` status.
+
+| Parameter | Required | Notes |
+|-----------|----------|-------|
+| `file_content` | **Yes** | Base64-encoded file bytes |
+| `filename` | **Yes** | Original filename with extension |
+| `kb_id` | No | Omit to use default KB |
+| `user_id` | No | Overrides env default |
+
+Example:
+```
+upload_document(file_content="<base64>", filename="report.pdf")
+```
+
+---
+
+## `list_documents`
+
+List documents in a knowledge base with optional filters.
+
+| Parameter | Required | Notes |
+|-----------|----------|-------|
+| `kb_id` | No | Omit to use default KB |
+| `status` | No | Filter: `pending` / `success` / `failed` |
+| `filename` | No | Fuzzy search by filename |
+| `limit` | No | Default 50, max 100 |
+| `offset` | No | Pagination offset |
+
+---
+
 ## Scene → domain mapping
 
 | domain | expert_id (backend) |
