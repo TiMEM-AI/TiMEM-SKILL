@@ -5,7 +5,7 @@
 | Layer | Repository | Responsibility |
 |-------|------------|----------------|
 | **Skill** | timem-skill | When to search/create, scene-specific rules, verify steps, closure |
-| **MCP** | timem-mcp | Atomic tools: `search_memories`, `create_memory`, `delete_memory`, `ready` |
+| **MCP** | timem-mcp | Atomic tools: `search_memories`, `create_memory`, `delete_memory`, `ready`, `search_knowledge`, `upload_document`, `list_knowledge_bases`, `list_documents` |
 
 Skills follow the Context7-style pattern: Skill orchestrates, MCP executes.
 
@@ -26,6 +26,7 @@ MCP defines three scenes in `timem_mcp/scenes.py`:
 | general | `general` | `default` | timem-general-memory |
 | coding | `coding` | `coder` | timem-coding-memory |
 | writing | `writing` | `writer` | timem-writing-memory |
+| knowledge | — | — | timem-knowledge |
 
 **One job per skill.** Cursor loads each skill's `name` + `description` at discovery; the full `SKILL.md` loads only when relevant. No router skill is required.
 
@@ -47,8 +48,9 @@ Optional helper: `classify_memory_scene(messages)` when scene is unclear.
 | general | Simple recall triggers | vs current conversation | Stable preferences/facts |
 | writing | Style/audience recall | vs draft intent | Style, tone, audience |
 | coding | Search Tier S0–S-skip | vs code + AGENTS.md | decision/constraint/lesson/… |
+| knowledge | Document retrieval | vs user's question | Upload only when reusable |
 
-Coding is the most detailed skill; general and writing stay lean.
+Coding is the most detailed skill; general, writing, and knowledge stay lean.
 
 ## Canonical sources
 
@@ -66,5 +68,6 @@ Coding is the most detailed skill; general and writing stay lean.
 | general | Optional; omit for cross-topic prefs; use stable topic name when scoped |
 | writing | Optional series/doc name (e.g. `blog-2026`) |
 | coding | Required stable repo name (e.g. `timem-mcp`) |
+| knowledge | Not applicable — uses `kb_id` instead |
 
 Never use a random UUID per turn.
