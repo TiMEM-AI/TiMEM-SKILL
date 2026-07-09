@@ -24,6 +24,26 @@ Manual checks in Cursor (requires timem-mcp connected, `timem-platform-backend` 
 
 See prior examples in git history for `timem-general-memory` and `timem-writing-memory`.
 
+## Rule learning (timem-rule-learning)
+
+Structural:
+
+- [x] `skills/timem-rule-learning/SKILL.md` valid frontmatter; folder name matches `name`
+- [x] Self-contained: full tool reference in own `references/mcp-tools.md`; no `skills/shared` dependency
+- [x] Tool names/parameters match timem-mcp `timem_mcp/rule_learning.py` (≥ 0.4.0)
+
+Manual checks in Cursor (requires timem-mcp connected):
+
+| # | Input | Expect |
+|---|-------|--------|
+| 1 | 「不要用 merge commit，以后都 rebase」 | overlap check → **learn_rule** (explicit never; situation + lesson) |
+| 2 | New task 「把这个 PR 合进 main」 | **recall_rules** before acting → apply → **record_rule_outcome** after result known |
+| 3 | Recall returns 0 rules | Proceed normally; no invented constraints, no forced learn |
+| 4 | 「记住我们后端端口是 8000」 | **create_memory** (fact, no situation→action lesson), **no** learn_rule |
+| 5 | Lesson overlaps an existing rule | recall/list → **update_rule**, no near-duplicate learn |
+| 6 | Recalled rule misled on this task | record_rule_outcome(**helpful=false**, note=exception) |
+| 7 | 「把那条规则删了」 | list/recall to find rule_id → confirm → **delete_rule** |
+
 ## Install smoke test
 
 Copy skills to `.cursor/skills/`, reload Cursor, confirm `/timem-coding-memory` or auto-discovery.

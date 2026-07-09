@@ -1,6 +1,6 @@
 # TiMEM Skills
 
-Agent Skills for [TiMEM](https://timem.cloud) memory workflows. Skills orchestrate **when and how** to call [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) atomic tools (`search_memories`, `create_memory`, `delete_memory`).
+Agent Skills for [TiMEM](https://timem.cloud) memory workflows. Skills orchestrate **when and how** to call [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) atomic tools — memories (`search_memories`, `create_memory`, `delete_memory`) and rules (`recall_rules`, `learn_rule`, `record_rule_outcome`).
 
 **Language:** English | [简体中文](README_zh.md)
 
@@ -11,8 +11,9 @@ Agent Skills for [TiMEM](https://timem.cloud) memory workflows. Skills orchestra
 | [timem-general-memory](skills/timem-general-memory/) | `general` | Personal preferences, everyday facts |
 | [timem-writing-memory](skills/timem-writing-memory/) | `writing` | Copywriting, style, tone, content creation |
 | [timem-coding-memory](skills/timem-coding-memory/) | `coding` | Software development, debugging, architecture |
+| [timem-rule-learning](skills/timem-rule-learning/) | rules (cross-scene) | Learn from corrections and outcomes; reuse proven situation→action rules |
 
-Each scene is a **separate skill** (one job per skill). Cursor routes by each skill's `description` — no router skill required.
+Each scene is a **separate skill** (one job per skill). Cursor routes by each skill's `description` — no router skill required. `timem-rule-learning` is not a scene: it runs alongside the memory skills and is scoped by `agent_id` instead of `domain`.
 
 ## Prerequisites
 
@@ -29,7 +30,7 @@ cp -r /path/to/timem-skill/skills/timem-coding-memory .cursor/skills/
 cp -r /path/to/timem-skill/skills/shared .cursor/skills/timem-shared
 ```
 
-Install all three skills for full TiMEM coverage. See [docs/installation.md](docs/installation.md).
+Install all four skills for full TiMEM coverage (`timem-rule-learning` is self-contained — no `shared` needed). See [docs/installation.md](docs/installation.md).
 
 ## Architecture
 

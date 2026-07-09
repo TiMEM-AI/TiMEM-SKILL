@@ -9,7 +9,8 @@ skills/
 ├── shared/mcp-tools.md       # Shared MCP tool reference (not a skill)
 ├── timem-general-memory/
 ├── timem-writing-memory/
-└── timem-coding-memory/
+├── timem-coding-memory/
+└── timem-rule-learning/      # Self-contained (own references/mcp-tools.md)
 ```
 
 Each skill folder must contain `SKILL.md` with valid YAML frontmatter (`name`, `description`). Keep `SKILL.md` under 500 lines; put detail in `references/`.

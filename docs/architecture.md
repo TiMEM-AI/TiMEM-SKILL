@@ -4,8 +4,8 @@
 
 | Layer | Repository | Responsibility |
 |-------|------------|----------------|
-| **Skill** | timem-skill | When to search/create, scene-specific rules, verify steps, closure |
-| **MCP** | timem-mcp | Atomic tools: `search_memories`, `create_memory`, `delete_memory`, `ready` |
+| **Skill** | timem-skill | When to search/create/recall/learn, scene-specific rules, verify steps, closure |
+| **MCP** | timem-mcp | Atomic memory tools (`search_memories`, `create_memory`, `delete_memory`, `ready`) and rule tools (`recall_rules`, `learn_rule`, `record_rule_outcome`, lifecycle/governance/stats) |
 
 Skills follow the Context7-style pattern: Skill orchestrates, MCP executes.
 
@@ -28,6 +28,21 @@ MCP defines three scenes in `timem_mcp/scenes.py`:
 | writing | `writing` | `writer` | timem-writing-memory |
 
 **One job per skill.** Cursor loads each skill's `name` + `description` at discovery; the full `SKILL.md` loads only when relevant. No router skill is required.
+
+## Rule learning (cross-scene, not a scene)
+
+`timem-rule-learning` orchestrates the rule loop (recall → apply → grade → learn). It
+complements the memory skills instead of replacing them:
+
+| Axis | Memory skills | timem-rule-learning |
+|------|---------------|---------------------|
+| Stores | Facts, preferences, context | "In situation X, do Y" lessons |
+| Scope | `domain` (+ `session_id`) | `user_id` + `agent_id` (+ `attributes` filters) |
+| Tools | `search_memories` / `create_memory` / `delete_memory` | `recall_rules` / `learn_rule` / `record_rule_outcome` / `update_rule` / lifecycle, governance, stats |
+| Feedback loop | — | `record_rule_outcome` grades applied rules; backend refines |
+
+Decision boundary: content with a situation→action lesson → rule; everything else → memory.
+The skill is self-contained (own `references/mcp-tools.md`; no `skills/shared` dependency).
 
 ## What skills must NOT use (legacy MCP)
 
@@ -56,7 +71,8 @@ Coding is the most detailed skill; general and writing stay lean.
 |---------|-------------------|
 | Coding search/write rules | timem-skill `skills/timem-coding-memory/` |
 | General/write rules | timem-skill respective skills |
-| MCP tool API | timem-skill `skills/shared/mcp-tools.md` + timem-mcp server |
+| Rule-learning orchestration | timem-skill `skills/timem-rule-learning/` (keep consistent with MCP resource `timem://guides/rule-learning`) |
+| MCP tool API | timem-skill `skills/shared/mcp-tools.md` + timem-mcp server; rule tools: `skills/timem-rule-learning/references/mcp-tools.md` |
 | Legacy MCP guides | timem-mcp resources (appendix; point to timem-skill) |
 
 ## session_id conventions
@@ -66,5 +82,6 @@ Coding is the most detailed skill; general and writing stay lean.
 | general | Optional; omit for cross-topic prefs; use stable topic name when scoped |
 | writing | Optional series/doc name (e.g. `blog-2026`) |
 | coding | Required stable repo name (e.g. `timem-mcp`) |
+| rules (timem-rule-learning) | Not used — scope is `user_id` + `agent_id` (stable per role); project via `attributes`/`filters` |
 
 Never use a random UUID per turn.

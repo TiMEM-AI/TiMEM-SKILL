@@ -14,7 +14,8 @@ Install [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) first, then copy skil
 | Software development | `timem-coding-memory` (+ optional `timem-general-memory`) |
 | Content / copywriting | `timem-writing-memory` (+ optional `timem-general-memory`) |
 | General assistant | `timem-general-memory` |
-| Full TiMEM | All three + `shared` |
+| Agent self-improvement (rules) | `timem-rule-learning` — self-contained, add to any project type |
+| Full TiMEM | All four + `shared` |
 
 ## Project install (recommended)
 
@@ -28,10 +29,11 @@ mkdir -p .cursor/skills
 cp -r "$TIMEM_SKILL/skills/timem-general-memory" .cursor/skills/
 cp -r "$TIMEM_SKILL/skills/timem-writing-memory" .cursor/skills/
 cp -r "$TIMEM_SKILL/skills/timem-coding-memory" .cursor/skills/
+cp -r "$TIMEM_SKILL/skills/timem-rule-learning" .cursor/skills/
 cp -r "$TIMEM_SKILL/skills/shared" .cursor/skills/shared
 ```
 
-Install only the folders you need; always copy `shared` if skills reference MCP tool docs.
+Install only the folders you need; always copy `shared` if skills reference MCP tool docs (`timem-rule-learning` is self-contained and does not need `shared`).
 
 Restart Cursor or reload the window so skills are discovered.
 
