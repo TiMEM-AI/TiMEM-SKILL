@@ -34,7 +34,7 @@ cp -r /path/to/timem-skill/skills/shared .cursor/skills/timem-shared
 
 ## 架构
 
-Skill = 编排（搜/写规则）；MCP = 原子 API。遵循本仓库 Skill 时**不要**使用 MCP 遗留门控工具（`should_*`、`begin_coding_turn`、`end_coding_turn`）。
+Skill = 编排（搜/写规则）；MCP = 原子 API（`search_memories`、`create_memory`、`delete_memory`）。
 
 详见 [docs/architecture.md](docs/architecture.md)。
 

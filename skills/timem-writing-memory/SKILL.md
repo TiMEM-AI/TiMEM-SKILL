@@ -60,7 +60,6 @@ Do **not** create: one-off drafts with no reusable insight, full article dumps.
 
 ## Anti-patterns
 
-- Do not call `should_*`, `begin_coding_turn`, or `end_coding_turn`
 - Do not use `domain=coding` for pure writing work
 - Do not store entire articles in `messages` — summarize constraints
 

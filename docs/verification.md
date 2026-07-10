@@ -4,7 +4,7 @@ Structural checks (automated / repo review):
 
 - [x] Four skills under `skills/timem-*` with valid `SKILL.md` frontmatter
 - [x] Each `SKILL.md` under 500 lines
-- [x] Skills document atomic MCP tools only; no primary use of `should_*` / `begin/end`
+- [x] Skills document atomic MCP memory tools only
 - [x] `skills/shared/mcp-tools.md` present
 
 Manual checks in Cursor (requires timem-mcp connected, `timem-platform-backend` workspace):

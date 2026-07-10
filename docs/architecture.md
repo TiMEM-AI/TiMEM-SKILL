@@ -44,16 +44,9 @@ complements the memory skills instead of replacing them:
 Decision boundary: content with a situation→action lesson → rule; everything else → memory.
 The skill is self-contained (own `references/mcp-tools.md`; no `skills/shared` dependency).
 
-## What skills must NOT use (legacy MCP)
+## MCP memory API
 
-These embed orchestration inside MCP and conflict with the skill-first model:
-
-- `should_search_memories` / `should_create_memory`
-- `begin_coding_turn` / `end_coding_turn`
-
-Use atomic tools with explicit `domain` instead.
-
-Optional helper: `classify_memory_scene(messages)` when scene is unclear.
+Skills orchestrate when to call MCP atomic memory tools. Optional helper: `classify_memory_scene(messages)` when scene is unclear.
 
 ## Complexity by scene
 

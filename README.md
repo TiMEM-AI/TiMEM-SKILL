@@ -34,7 +34,7 @@ Install all four skills for full TiMEM coverage (`timem-rule-learning` is self-c
 
 ## Architecture
 
-Skill = orchestration (search/write rules). MCP = atomic API. Do **not** use legacy MCP policy tools (`should_*`, `begin_coding_turn`, `end_coding_turn`) when following these skills.
+Skill = orchestration (search/write rules). MCP = atomic API (`search_memories`, `create_memory`, `delete_memory`).
 
 Details: [docs/architecture.md](docs/architecture.md)
 

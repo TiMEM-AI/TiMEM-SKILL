@@ -87,7 +87,6 @@ create_memory(
 
 ## Anti-patterns
 
-- Do **not** call `should_search_memories`, `should_create_memory`, `begin_coding_turn`, `end_coding_turn`
 - Do **not** classify project overview / module questions as S-skip
 - Do **not** skip create for verified project orientation ("just read code" is not a valid reason)
 - Do **not** search every turn automatically

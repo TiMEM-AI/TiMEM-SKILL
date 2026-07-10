@@ -15,7 +15,6 @@ When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the
 ### Rules
 
 - Use `search_memories` / `create_memory` / `delete_memory` only
-- Do **not** use `should_*`, `begin_coding_turn`, or `end_coding_turn`
 - Do **not** treat project overview questions as S-skip
 - AGENTS.md = team conventions; TiMEM = decisions + **code-verified project orientation** (`domain=coding`)
 

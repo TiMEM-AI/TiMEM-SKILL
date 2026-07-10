@@ -64,7 +64,6 @@ User asks to forget → search first → `delete_memory(memory_id)`.
 
 ## Anti-patterns
 
-- Do not call `should_*`, `begin_coding_turn`, or `end_coding_turn`
 - Do not use `domain=coding` for general chat
 - Do not paste long logs into `messages`
 
