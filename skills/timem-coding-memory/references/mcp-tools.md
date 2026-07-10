@@ -6,4 +6,4 @@ Full parameter reference: [shared mcp-tools.md](../../shared/mcp-tools.md) — i
 
 Coding-specific: optional `memory_hint` on `create_memory` (`decision`, `constraint`, `lesson`, `convention`, `preference`, `correction`).
 
-Do not use `should_*` or `begin/end` composite tools.
+Atomic MCP memory tools only. See [shared mcp-tools.md](../../shared/mcp-tools.md).

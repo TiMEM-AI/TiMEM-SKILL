@@ -59,7 +59,7 @@ After publishing timem-skill to GitHub:
 
 1. MCP: call `ready` or confirm TiMEM tools appear in Agent
 2. Skills: type `/` in Agent chat — skills should appear by name
-3. Test a coding turn: tier classify → conditional `search_memories` → no `begin_coding_turn`
+3. Test a coding turn: tier classify → conditional `search_memories`
 
 ## Troubleshooting
 

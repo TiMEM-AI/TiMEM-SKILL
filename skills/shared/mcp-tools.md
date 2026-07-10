@@ -2,7 +2,7 @@
 
 Skills orchestrate **when** to call these tools. Requires [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) connected in your MCP client.
 
-**Do not use** legacy policy/composite tools: `should_search_memories`, `should_create_memory`, `begin_coding_turn`, `end_coding_turn`.
+Use atomic MCP memory tools only: `search_memories`, `create_memory`, `delete_memory` (and `classify_memory_scene` when domain is unclear).
 
 Always pass **`domain`** explicitly (`general` | `coding` | `writing`). Do not rely on `TIMEM_AUTO_SCENE` in skill workflows.
 

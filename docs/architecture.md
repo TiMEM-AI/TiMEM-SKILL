@@ -29,16 +29,9 @@ MCP defines three scenes in `timem_mcp/scenes.py`:
 
 **One job per skill.** Cursor loads each skill's `name` + `description` at discovery; the full `SKILL.md` loads only when relevant. No router skill is required.
 
-## What skills must NOT use (legacy MCP)
+## MCP memory API
 
-These embed orchestration inside MCP and conflict with the skill-first model:
-
-- `should_search_memories` / `should_create_memory`
-- `begin_coding_turn` / `end_coding_turn`
-
-Use atomic tools with explicit `domain` instead.
-
-Optional helper: `classify_memory_scene(messages)` when scene is unclear.
+Skills orchestrate when to call MCP atomic memory tools. Optional helper: `classify_memory_scene(messages)` when scene is unclear.
 
 ## Complexity by scene
 
