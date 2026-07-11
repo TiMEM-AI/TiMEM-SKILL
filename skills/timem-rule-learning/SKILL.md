@@ -16,7 +16,7 @@ skills (`create_memory`), not here.
 
 ## Prerequisites
 
-- [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) ≥ 0.4.0 connected (rule tools)
+- [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) with all 8 public Rule tools connected (`full` or optional `rule` Tool Profile)
 - MCP tools: [references/mcp-tools.md](references/mcp-tools.md) — **self-contained**; this skill does not require `skills/shared`
 
 ## Parameters
@@ -81,11 +81,12 @@ correction. See [workflow.md](references/workflow.md) for triggers and the noise
 | Applied rule, result now known | `record_rule_outcome` |
 | User explicitly asks to remove a rule | `delete_rule` (archives, not hard delete) |
 
-## Governance and usage stats (on request only)
+## Usage and administration (on request only)
 
-User asks to audit the rulebase → `list_rule_governance_proposals` /
-`resolve_rule_governance_proposal`. Usage or billing questions → `get_rule_usage_*` /
-`list_rule_usage_events`. Not part of the per-task loop.
+User asks for their own rule usage → `get_rule_usage_report` (`summary` or `daily`).
+Governance proposals, cross-user rankings, and raw usage events are control-plane
+capabilities, not public MCP tools; direct the user to the TiMEM console or an authorized
+Admin integration. Read `timem://guides/rule-admin` when the boundary or migration matters.
 
 ## Anti-patterns
 
@@ -106,5 +107,8 @@ User asks to audit the rulebase → `list_rule_governance_proposals` /
 ## Server-side companions
 
 MCP prompts `rule_task_start` / `rule_session_wrap_up` wrap steps 1–2 and 5–6 of the loop;
-MCP resource `timem://guides/rule-learning` is the server-side guide. Keep this skill and
-that guide consistent when either changes.
+MCP resource `timem://guides/rule-learning` is the server-side loop guide;
+`timem://guides/rule-admin` documents usage and the public/control-plane boundary. Keep
+this skill and those guides consistent when either changes. If tools are missing, read
+`timem://capabilities`; Tool Profile setup is documented by
+`timem://guides/tool-profiles` and remains an explicit server configuration, not a Skill action.

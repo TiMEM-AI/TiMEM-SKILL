@@ -5,9 +5,16 @@
 | Layer | Repository | Responsibility |
 |-------|------------|----------------|
 | **Skill** | timem-skill | When to search/create/recall/learn, scene-specific rules, verify steps, closure |
-| **MCP** | timem-mcp | Atomic memory tools (`search_memories`, `create_memory`, `delete_memory`, `ready`) and rule tools (`recall_rules`, `learn_rule`, `record_rule_outcome`, lifecycle/governance/stats) |
+| **MCP** | timem-mcp | Atomic memory tools and the 8-tool public Rule surface (runtime, lifecycle, authenticated-user usage) |
 
 Skills follow the Context7-style pattern: Skill orchestrates, MCP executes.
+
+The MCP runtime can optionally reduce its public schema with
+`TiMEM_MCP_TOOL_PROFILE`. A Rule-only runtime exposes the 8 public Rule tools
+plus the always-available `ready` diagnostic. This selection is explicit and
+static per server instance: installing a Skill does not automatically change an
+MCP server's tools, and Tool Profiles are not authorization boundaries. Use
+`timem://capabilities` to inspect the active runtime surface.
 
 ```
 User message
@@ -38,7 +45,7 @@ complements the memory skills instead of replacing them:
 |------|---------------|---------------------|
 | Stores | Facts, preferences, context | "In situation X, do Y" lessons |
 | Scope | `domain` (+ `session_id`) | `user_id` + `agent_id` (+ `attributes` filters) |
-| Tools | `search_memories` / `create_memory` / `delete_memory` | `recall_rules` / `learn_rule` / `record_rule_outcome` / `update_rule` / lifecycle, governance, stats |
+| Tools | `search_memories` / `create_memory` / `delete_memory` | `recall_rules` / `learn_rule` / `record_rule_outcome` / lifecycle management / `get_rule_usage_report` |
 | Feedback loop | — | `record_rule_outcome` grades applied rules; backend refines |
 
 Decision boundary: content with a situation→action lesson → rule; everything else → memory.
@@ -64,7 +71,7 @@ Coding is the most detailed skill; general and writing stay lean.
 |---------|-------------------|
 | Coding search/write rules | timem-skill `skills/timem-coding-memory/` |
 | General/write rules | timem-skill respective skills |
-| Rule-learning orchestration | timem-skill `skills/timem-rule-learning/` (keep consistent with MCP resource `timem://guides/rule-learning`) |
+| Rule-learning orchestration | timem-skill `skills/timem-rule-learning/` (keep consistent with MCP resources `timem://guides/rule-learning` and `timem://guides/rule-admin`) |
 | MCP tool API | timem-skill `skills/shared/mcp-tools.md` + timem-mcp server; rule tools: `skills/timem-rule-learning/references/mcp-tools.md` |
 | Legacy MCP guides | timem-mcp resources (appendix; point to timem-skill) |
 

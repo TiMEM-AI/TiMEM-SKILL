@@ -71,11 +71,14 @@ Counter-example that **is** a rule: "记住：改端口前先查 docker-compose 
 1. `list_rules(agent_id="coder")` or `recall_rules` to locate the `rule_id`; confirm with the user if ambiguous
 2. `delete_rule(rule_id="...")` — archives the rule (not a hard delete)
 
-## Example 8 — Governance audit (on request)
+## Example 8 — User usage report
 
-**User:** "看下有没有待审的规则合并提案"
+**User:** "看下我这个月用了多少次规则召回"
 
 **Actions:**
 
-1. `list_rule_governance_proposals(status="pending_human", agent_id="coder")`
-2. Present each proposal; on user decision → `resolve_rule_governance_proposal(proposal_id="...", action="apply")` (or `"reject"`)
+1. `get_rule_usage_report(breakdown="summary", start_date="2026-07-01", end_date="2026-07-31", operation="recall")`
+2. Summarize only the authenticated user's returned totals
+
+For governance audits, explain that proposals are handled in the TiMEM console or an
+authorized Admin integration; read `timem://guides/rule-admin` for the capability boundary.

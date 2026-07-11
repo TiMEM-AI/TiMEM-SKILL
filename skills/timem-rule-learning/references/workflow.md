@@ -93,12 +93,13 @@ Run at task end, and immediately on explicit triggers:
 - `delete_rule` archives (soft), on explicit user intent only. Find the `rule_id` via
   `list_rules` or `recall_rules` first; confirm if ambiguous.
 
-## Governance (opt-in)
+## Governance (control plane)
 
-`enable_governance=true` on `learn_rule` routes risky merges/conflicts into proposals
-instead of auto-applying (`conflict_scope_keys` defines the conflict-detection scope). Review
-on user request: `list_rule_governance_proposals(status="pending_human")` →
-`resolve_rule_governance_proposal(proposal_id, action="apply"|"reject")`.
+`enable_governance=true` on `learn_rule` can route risky merges/conflicts into proposals
+instead of auto-applying (`conflict_scope_keys` defines the conflict-detection scope).
+Proposal listing and apply/reject are control-plane capabilities, not public MCP tools.
+Direct governance requests to the TiMEM console or an authorized Admin integration; see
+`timem://guides/rule-admin`.
 
 ## Latency and errors
 

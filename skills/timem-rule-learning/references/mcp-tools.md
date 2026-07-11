@@ -1,7 +1,7 @@
 # TiMEM MCP rule-learning tools
 
-Full parameter reference for the rule-learning tools exposed by
-[timem-mcp](https://github.com/TiMEM-AI/timem-mcp) (≥ 0.4.0). This file is **self-contained**
+Full parameter reference for the 8 public rule-learning tools exposed by
+[timem-mcp](https://github.com/TiMEM-AI/timem-mcp). This file is **self-contained**
 — unlike the memory skills, `timem-rule-learning` does not depend on `skills/shared`.
 
 All tools scope by **`user_id` + `agent_id`**: omit `user_id` (resolved from `TiMEM_USER_ID`);
@@ -117,17 +117,20 @@ explicit user intent only; locate the id via `list_rules` / `recall_rules` first
 
 ---
 
-## Governance tools (on request only)
+## `get_rule_usage_report`
 
-- `list_rule_governance_proposals(status=..., risk_level=...)` — statuses: `auto_applied`,
-  `pending_human`, `rejected`, `expired`; risk: `low` / `medium` / `high`.
-- `resolve_rule_governance_proposal(proposal_id, action="apply"|"reject")`.
+Read-only usage for the authenticated user. The tool does not accept `user_id`.
 
-## Usage-stats tools (admin/billing; on request only)
+| Parameter | Required | Notes |
+|-----------|----------|-------|
+| `breakdown` | No | `summary` (default) or `daily` |
+| `start_date` / `end_date` | No | Inclusive `YYYY-MM-DD` range |
+| `agent_id` | No | Stable role filter; omit for all of the user's agents |
+| `operation` | No | `learn` or `recall` |
 
-`get_rule_usage_summary`, `get_rule_usage_daily`, `get_rule_usage_top_users`,
-`list_rule_usage_events`, `get_rule_usage_event` — learn/recall usage aggregates, rankings,
-and event records (filter by date range, `operation="learn"|"recall"`, `success`).
+Governance proposals, cross-user rankings, and raw usage events are not public MCP tools.
+Use the TiMEM console or an authorized Admin integration; read
+`timem://guides/rule-admin` for discovery and migration details.
 
 ---
 
@@ -136,5 +139,6 @@ and event records (filter by date range, `operation="learn"|"recall"`, `success`
 | Type | Name | Use |
 |------|------|-----|
 | Resource | `timem://guides/rule-learning` | Server-side loop guide |
+| Resource | `timem://guides/rule-admin` | Public/admin boundary and usage migration |
 | Prompt | `rule_task_start` | Recall applicable rules at task start |
 | Prompt | `rule_session_wrap_up` | Grade applied rules + learn 0–3 new rules at task end |
