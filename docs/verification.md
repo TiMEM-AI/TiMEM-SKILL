@@ -30,7 +30,7 @@ Structural:
 
 - [x] `skills/timem-rule-learning/SKILL.md` valid frontmatter; folder name matches `name`
 - [x] Self-contained: full tool reference in own `references/mcp-tools.md`; no `skills/shared` dependency
-- [x] Tool names/parameters match timem-mcp `timem_mcp/rule_learning.py` (≥ 0.4.0)
+- [x] Tool names/parameters match timem-mcp `timem_mcp/rule_learning.py` (≥ 0.8.0)
 
 Manual checks in Cursor (requires timem-mcp connected):
 
@@ -43,6 +43,7 @@ Manual checks in Cursor (requires timem-mcp connected):
 | 5 | Lesson overlaps an existing rule | recall/list → **update_rule**, no near-duplicate learn |
 | 6 | Recalled rule misled on this task | record_rule_outcome(**helpful=false**, note=exception) |
 | 7 | 「把那条规则删了」 | list/recall to find rule_id → confirm → **delete_rule** |
+| 8 | 「看下我本月 recall 用量」 | **get_rule_usage_report** summary/daily; explain `recall_billable_tokens` |
 
 ## Install smoke test
 

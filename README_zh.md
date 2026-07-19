@@ -34,7 +34,7 @@ cp -r /path/to/timem-skill/skills/shared .cursor/skills/timem-shared
 
 ## 架构
 
-Skill = 编排（搜/写规则）；MCP = 原子 API（`search_memories`、`create_memory`、`delete_memory`）。
+Skill = 编排（搜索/写入记忆，召回/学习/反馈规则）；MCP = 原子 API 工具，包括 8 个公共规则工具。
 
 详见 [docs/architecture.md](docs/architecture.md)。
 

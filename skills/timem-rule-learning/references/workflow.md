@@ -17,21 +17,23 @@ the memory skills.
 
 1. **RECALL EVAL** — new task start; key, risky, ambiguous, or repeated decision; recurring
    domain; user asks to use/check rules. Skip only when history cannot change the answer.
-2. **Build inputs** — `situation_text`: the current decision point, concise and specific
-   (required). `context_text`: user request, evidence, constraints, code or candidate details.
+2. **Build inputs** — `query_text`: one concise retrieval query (required).
+   For `judged` / `auto`, add `judge_scene_text` (decision point) and
+   `judge_context_text` (request, evidence, constraints, code or candidate details).
 3. **Call**:
    ```
    recall_rules(
-     situation_text="<decision point>",
-     context_text="<request / evidence / constraints>",
+     query_text="<retrieval query>",
      agent_id="<role>",
-     mode="similarity",   # judged for risky/ambiguous; auto for long/uncertain context
+     mode="similarity",   # default: retrieval only
      top_k=5,
    )
    ```
    - `tags_hint` biases retrieval without hard-filtering; `filters` hard-filter.
-   - `use_llm_refine=true` (default) lets the backend re-rank candidates.
-   - `judged` and `auto` invoke backend LLM judging — slower (up to ~2 min); do not spam.
+   - `judged` checks the complete filtered pool. `auto` retrieves `top_k` and judges those
+     candidates; failed judging falls back to retrieval.
+   - For either judging mode, pass only the decision evidence needed through
+     `judge_scene_text` and `judge_context_text`.
 4. **Verify** — recalled rules are evidence, not truth. Check each against the current user
    request, files, and higher-priority instructions; apply only what fits and call out
    conflicts. Track the `rule_id` of every rule that actually influences an action.
@@ -80,9 +82,9 @@ Run at task end, and immediately on explicit triggers:
 
 ### Near-duplicate policy
 
-`learn_rule` returns `action="created"` or `"merged_into_existing"`, but backend merging is
-**still maturing — do not rely on it**. When overlap is likely, `recall_rules` or
-`list_rules` first and prefer `update_rule` over learning a near-duplicate.
+Ordinary `learn_rule` creates a new rule and returns `action="created"` with
+`merged_into=null`. When overlap is likely, call `recall_rules` or `list_rules` first and
+prefer `update_rule` over learning a near-duplicate.
 
 ## Update and delete
 
@@ -93,13 +95,11 @@ Run at task end, and immediately on explicit triggers:
 - `delete_rule` archives (soft), on explicit user intent only. Find the `rule_id` via
   `list_rules` or `recall_rules` first; confirm if ambiguous.
 
-## Governance (control plane)
+## Usage statistics
 
-`enable_governance=true` on `learn_rule` can route risky merges/conflicts into proposals
-instead of auto-applying (`conflict_scope_keys` defines the conflict-detection scope).
-Proposal listing and apply/reject are control-plane capabilities, not public MCP tools.
-Direct governance requests to the TiMEM console or an authorized Admin integration; see
-`timem://guides/rule-admin`.
+Use `get_rule_usage_report(breakdown="summary"|"daily")` only when the user asks for their
+own learn/recall usage. Optional filters are `start_date`, `end_date`, `agent_id`, and
+`operation`. `recall_billable_tokens` equals embedding tokens plus judge-model total tokens.
 
 ## Latency and errors
 

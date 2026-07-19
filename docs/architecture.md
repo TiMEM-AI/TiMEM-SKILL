@@ -71,7 +71,7 @@ Coding is the most detailed skill; general and writing stay lean.
 |---------|-------------------|
 | Coding search/write rules | timem-skill `skills/timem-coding-memory/` |
 | General/write rules | timem-skill respective skills |
-| Rule-learning orchestration | timem-skill `skills/timem-rule-learning/` (keep consistent with MCP resources `timem://guides/rule-learning` and `timem://guides/rule-admin`) |
+| Rule-learning orchestration | timem-skill `skills/timem-rule-learning/` (keep consistent with MCP resource `timem://guides/rule-learning`) |
 | MCP tool API | timem-skill `skills/shared/mcp-tools.md` + timem-mcp server; rule tools: `skills/timem-rule-learning/references/mcp-tools.md` |
 | Legacy MCP guides | timem-mcp resources (appendix; point to timem-skill) |
 

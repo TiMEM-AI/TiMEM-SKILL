@@ -46,11 +46,12 @@ check rules. Skip for tiny one-off actions history cannot change.
 
 | `mode` | Use |
 |--------|-----|
-| `similarity` (default) | Fast lookup |
-| `judged` | Backend LLM checks applicability per rule — risky or ambiguous decisions |
-| `auto` | Backend picks a strategy — long or uncertain contexts |
+| `similarity` (default) | Tag/BM25/vector retrieval only; no applicability judging |
+| `judged` | Judge the complete filtered rule pool |
+| `auto` | Retrieve `top_k`, judge those candidates, and fall back to retrieval if judging fails |
 
-**Required:** non-empty `situation_text` (the decision point, concise and specific).
+**Required:** one non-empty `query_text` for retrieval. Pass optional `judge_scene_text` and
+`judge_context_text` only when `judged` or `auto` needs decision evidence.
 
 Details: [references/workflow.md](references/workflow.md)
 
@@ -69,8 +70,8 @@ correction. See [workflow.md](references/workflow.md) for triggers and the noise
 - `situation_text` = observable trigger **before** the decision (embedded for future recall)
 - `outcome_text` = verified result + the reusable lesson
 - One rule per judgement point; max **0–3** rules per task
-- Backend merge (`action=created|merged_into_existing`) is still maturing — when overlap is
-  likely, recall/list first and prefer `update_rule`
+- Ordinary `learn_rule` creates a rule (`action=created`, `merged_into=null`) — when overlap
+  is likely, recall/list first and prefer `update_rule`
 
 ## Revise vs re-learn vs archive
 
@@ -81,12 +82,10 @@ correction. See [workflow.md](references/workflow.md) for triggers and the noise
 | Applied rule, result now known | `record_rule_outcome` |
 | User explicitly asks to remove a rule | `delete_rule` (archives, not hard delete) |
 
-## Usage and administration (on request only)
+## Usage (on request only)
 
 User asks for their own rule usage → `get_rule_usage_report` (`summary` or `daily`).
-Governance proposals, cross-user rankings, and raw usage events are control-plane
-capabilities, not public MCP tools; direct the user to the TiMEM console or an authorized
-Admin integration. Read `timem://guides/rule-admin` when the boundary or migration matters.
+For recall, `recall_billable_tokens` is embedding tokens plus judge-model total tokens.
 
 ## Anti-patterns
 
@@ -107,8 +106,7 @@ Admin integration. Read `timem://guides/rule-admin` when the boundary or migrati
 ## Server-side companions
 
 MCP prompts `rule_task_start` / `rule_session_wrap_up` wrap steps 1–2 and 5–6 of the loop;
-MCP resource `timem://guides/rule-learning` is the server-side loop guide;
-`timem://guides/rule-admin` documents usage and the public/control-plane boundary. Keep
-this skill and those guides consistent when either changes. If tools are missing, read
+MCP resource `timem://guides/rule-learning` is the server-side loop guide. Keep this skill
+and that guide consistent when either changes. If tools are missing, read
 `timem://capabilities`; Tool Profile setup is documented by
 `timem://guides/tool-profiles` and remains an explicit server configuration, not a Skill action.

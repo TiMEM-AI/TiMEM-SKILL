@@ -6,7 +6,7 @@
 
 **Actions:**
 
-1. RECALL EVAL → repeated risky decision → `recall_rules(situation_text="merge PR into main branch", context_text="repo timem-mcp, PR #92", agent_id="coder", top_k=5)`
+1. RECALL EVAL → repeated risky decision → `recall_rules(query_text="linear history rules for merging a PR into main", judge_scene_text="merge PR into main branch", judge_context_text="repo timem-mcp, PR #92", agent_id="coder", mode="judged", top_k=5)`
 2. Hit: "PR to main → rebase only, never merge commit" — verify it still matches repo policy
 3. Rebase and merge; track the applied `rule_id`
 4. Result verified (linear history kept) → `record_rule_outcome(rule_id="...", helpful=true, note="rebase kept linear history on PR #92")`
@@ -47,7 +47,7 @@ an existing rule "502 errors → check TiMEM_API_HOST port".
 
 **Actions:**
 
-1. `recall_rules(situation_text="review candidate resume for backend role", agent_id="hr-reviewer", mode="judged")` → 0 rules
+1. `recall_rules(query_text="backend candidate resume review rules", agent_id="hr-reviewer")` → 0 rules
 2. Proceed with the review normally — no invented constraints, no forced learn
 
 ## Example 6 — Fact, not rule → memory skill
@@ -78,7 +78,5 @@ Counter-example that **is** a rule: "记住：改端口前先查 docker-compose 
 **Actions:**
 
 1. `get_rule_usage_report(breakdown="summary", start_date="2026-07-01", end_date="2026-07-31", operation="recall")`
-2. Summarize only the authenticated user's returned totals
-
-For governance audits, explain that proposals are handled in the TiMEM console or an
-authorized Admin integration; read `timem://guides/rule-admin` for the capability boundary.
+2. Summarize only the authenticated user's returned totals, including
+   `recall_billable_tokens` when present

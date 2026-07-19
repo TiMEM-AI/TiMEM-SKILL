@@ -14,55 +14,51 @@ up to ~120 s — they invoke backend LLM paths.
 
 ## `recall_rules`
 
-Recall rules relevant to the current situation. Empty result is normal.
+Recall rules from one caller-owned retrieval query. Empty result is normal.
 
 | Parameter | Required | Notes |
 |-----------|----------|-------|
-| `situation_text` | **Yes** | Current decision point, concise and specific |
-| `context_text` | No | Request, evidence, constraints, code/candidate details |
+| `query_text` | **Yes** | One concise retrieval query (1–4000 chars) |
+| `judge_scene_text` | No | Decision scene for `judged` / `auto` (max 4000 chars) |
+| `judge_context_text` | No | Evidence or longer context for `judged` / `auto` (max 30000 chars) |
 | `agent_id` | Recommended | Stable role id |
-| `mode` | No | `similarity` (default, fast) / `judged` (LLM applicability per rule) / `auto` (backend picks) |
+| `mode` | No | `similarity` (default, retrieval only) / `judged` (complete filtered pool) / `auto` (retrieve `top_k`, then judge with fallback) |
 | `top_k` | No | Default 5 (1–50) |
-| `tags_hint` | No | Biases retrieval; does not hard-filter |
-| `filters` | No | Exact-match on `attributes`; rules **missing** a filtered key are excluded |
-| `include_missing_filter_keys` | No | Filter keys that should NOT exclude rules lacking that attribute |
-| `min_score` | No | 0.0–1.0, default 0.0 |
-| `use_llm_refine` | No | Default `true` — backend re-ranks candidates |
-
-Advanced (omit unless instructed): `coarse_context_chunks`, `auto_direct_candidate_limit`,
-`auto_coarse_top_k` (auto-mode tuning), `governance_profile_id`.
+| `tags_hint` | No | Up to 32 tags; biases retrieval without hard-filtering |
+| `filters` | No | Exact-match scalar attributes; max 16 keys / 8 KiB |
+| `include_missing_filter_keys` | No | Up to 32 filter keys that should NOT exclude rules lacking that attribute |
 
 ```
 recall_rules(
-  situation_text="merge PR into main branch",
-  context_text="repo timem-mcp, PR #92",
+  query_text="linear history rules for merging a PR into main",
+  judge_scene_text="merge PR into main branch",
+  judge_context_text="repo timem-mcp, PR #92",
   agent_id="coder",
   mode="judged",
   top_k=5,
 )
 ```
 
-Results include each rule's `rule_id` — keep it for `record_rule_outcome`.
+Results include each rule's `rule_id` — keep it for `record_rule_outcome`. The aggregate
+retrieval field is `retrieval_score`; route/rank, fallback, applicability, evidence, and
+`judgement` fields may also be present.
 
 ---
 
 ## `learn_rule`
 
-Learn (or merge into) a reusable rule from a situation and its verified outcome.
+Create a reusable rule from a situation and its verified outcome.
 
 | Parameter | Required | Notes |
 |-----------|----------|-------|
-| `situation_text` | **Yes** | Observable trigger **before** the decision; embedded for recall |
-| `outcome_text` | **Yes** | Verified result + the reusable lesson |
+| `situation_text` | **Yes** | Observable trigger **before** the decision; 1–4000 chars |
+| `outcome_text` | **Yes** | Verified result + the reusable lesson; 1–4000 chars |
 | `agent_id` | Recommended | Stable role id |
-| `suggested_tags` | No | Short topical tags; not hyper-specific |
-| `attributes` | No | Stable keys (`project`, `domain`, `stage`) for recall-time filtering |
-| `enable_governance` | No | Default `false`; `true` routes risky merges/conflicts into proposals |
-| `conflict_scope_keys` | No | Attribute keys defining the conflict-detection scope |
-| `governance_profile_id` | No | Omit unless instructed |
+| `suggested_tags` | No | Up to 32 short topical tags; not hyper-specific |
+| `attributes` | No | Stable keys (`project`, `domain`, `stage`) for recall-time filtering; max 32 top-level keys / 16 KiB |
 
-Returns `action="created"` or `"merged_into_existing"`. Merging is still maturing — when
-overlap is likely, recall/list first and prefer `update_rule`.
+Ordinary calls return `action="created"` and `merged_into=null`. When overlap is likely,
+recall/list first and prefer `update_rule`.
 
 ---
 
@@ -128,9 +124,7 @@ Read-only usage for the authenticated user. The tool does not accept `user_id`.
 | `agent_id` | No | Stable role filter; omit for all of the user's agents |
 | `operation` | No | `learn` or `recall` |
 
-Governance proposals, cross-user rankings, and raw usage events are not public MCP tools.
-Use the TiMEM console or an authorized Admin integration; read
-`timem://guides/rule-admin` for discovery and migration details.
+`recall_billable_tokens` equals embedding tokens plus judge-model total tokens.
 
 ---
 
@@ -139,6 +133,5 @@ Use the TiMEM console or an authorized Admin integration; read
 | Type | Name | Use |
 |------|------|-----|
 | Resource | `timem://guides/rule-learning` | Server-side loop guide |
-| Resource | `timem://guides/rule-admin` | Public/admin boundary and usage migration |
 | Prompt | `rule_task_start` | Recall applicable rules at task start |
 | Prompt | `rule_session_wrap_up` | Grade applied rules + learn 0–3 new rules at task end |
