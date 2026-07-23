@@ -18,15 +18,27 @@ MCP server's tools, and Tool Profiles are not authorization boundaries. Use
 
 ```
 User message
-    → Cursor matches skill description
+    → Agent matches skill description
     → Skill workflow (checklists, tiers, rubric)
     → MCP tool calls (search / create / delete)
     → Skill formats answer
 ```
 
-## Three scenes, three skills
+## Packaging (source vs dist)
 
-MCP defines three scenes in `timem_mcp/scenes.py`:
+| Location | Role |
+|----------|------|
+| `skills/` | **Source of truth** for authors |
+| `skills/shared/mcp-tools.md` | Shared MCP parameter reference (hand-edit here only) |
+| `skills/timem-*-memory/references/mcp-tools.md` | **Generated** via `scripts/sync-shared-mcp-tools.py` (self-contained installs) |
+| `dist/full/timem-coding-memory/` | User package — multi-file coding skill |
+| `dist/standalone/timem-coding-memory/` | User package — single inlined `SKILL.md` |
+
+Rebuild user packages: `python scripts/build-all.py`.
+
+## Three scenes, three memory skills
+
+MCP defines three memory scenes in `timem_mcp/scenes.py`:
 
 | Scene | `domain` | `expert_id` | Skill |
 |-------|----------|-------------|-------|
@@ -35,7 +47,7 @@ MCP defines three scenes in `timem_mcp/scenes.py`:
 | writing | `writing` | `writer` | timem-writing-memory |
 | knowledge | — | — | timem-knowledge |
 
-**One job per skill.** Cursor loads each skill's `name` + `description` at discovery; the full `SKILL.md` loads only when relevant. No router skill is required.
+**One job per skill.** The agent loads each skill's `name` + `description` at discovery; the full `SKILL.md` loads only when relevant. No router skill is required.
 
 ## Rule learning (cross-scene, not a scene)
 
@@ -60,21 +72,22 @@ Skills orchestrate when to call MCP atomic memory tools. Optional helper: `class
 
 | Scene | Search model | Verify | Write rubric |
 |-------|--------------|--------|--------------|
-| general | Simple recall triggers | vs current conversation | Stable preferences/facts |
+| general | Explicit recall or answer needs prefs/facts | vs current conversation | gated create (stable prefs/facts; 0–5/task) |
 | writing | Style/audience recall | vs draft intent | Style, tone, audience |
-| coding | Search Tier S0–S-skip | vs code + AGENTS.md | decision/constraint/lesson/… |
+| coding | Must/Should/Skip → S0–S-skip; pass `search_tier` | vs code + AGENTS.md | gated WRITE EVAL (decision/constraint/lesson/…) |
 | knowledge | Document retrieval | vs user's question | Upload only when reusable |
 
-Coding is the most detailed skill; general, writing, and knowledge stay lean.
+Coding is the most detailed skill; general stays lean with dual-track `dist/` packages; writing and knowledge stay lean.
 
 ## Canonical sources
 
 | Content | Canonical location |
 |---------|-------------------|
-| Coding search/write rules | timem-skill `skills/timem-coding-memory/` |
-| General/write rules | timem-skill respective skills |
-| Rule-learning orchestration | timem-skill `skills/timem-rule-learning/` (keep consistent with MCP resource `timem://guides/rule-learning`) |
-| MCP tool API | timem-skill `skills/shared/mcp-tools.md` + timem-mcp server; rule tools: `skills/timem-rule-learning/references/mcp-tools.md` |
+| Coding search/write rules | `skills/timem-coding-memory/` (author); user installs from `dist/` |
+| General search/write rules | `skills/timem-general-memory/` (author); user installs from `dist/` |
+| Writing rules | `skills/timem-writing-memory/` |
+| Rule-learning orchestration | `skills/timem-rule-learning/` (keep consistent with MCP resource `timem://guides/rule-learning`) |
+| MCP tool API | `skills/shared/mcp-tools.md` (source) → synced into memory skills; rule tools: `skills/timem-rule-learning/references/mcp-tools.md` |
 | Legacy MCP guides | timem-mcp resources (appendix; point to timem-skill) |
 
 ## session_id conventions
