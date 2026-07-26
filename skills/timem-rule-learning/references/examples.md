@@ -1,12 +1,12 @@
 # Rule learning examples
 
-## Example 1 — Task start recall, apply, grade
+## Example 1 — Mandatory per-turn recall, apply, grade
 
 **User:** "把这个 PR 合进 main"
 
 **Actions:**
 
-1. RECALL EVAL → repeated risky decision → `recall_rules(query_text="linear history rules for merging a PR into main", judge_scene_text="merge PR into main branch", judge_context_text="repo timem-mcp, PR #92", agent_id="coder", mode="judged", top_k=5)`
+1. Mandatory recall before acting → `recall_rules(query_text="linear history rules for merging a PR into main", judge_scene_text="merge PR into main branch", judge_context_text="repo timem-mcp, PR #92", agent_id="coder", mode="judged", top_k=5)`
 2. Hit: "PR to main → rebase only, never merge commit" — verify it still matches repo policy
 3. Rebase and merge; track the applied `rule_id`
 4. Result verified (linear history kept) → `record_rule_outcome(rule_id="...", helpful=true, note="rebase kept linear history on PR #92")`
@@ -17,9 +17,10 @@
 
 **Actions:**
 
-1. Explicit always/never trigger → LEARN EVAL now, not at task end
-2. `recall_rules`/`list_rules` quick check for an overlapping rule (none found)
-3. `learn_rule(situation_text="merging a PR into main in this team's repos", outcome_text="use rebase; merge commits break the linear-history convention", agent_id="coder", suggested_tags=["git", "pr"], attributes={"project": "timem-mcp"})`
+1. Complete the mandatory per-turn recall; do not use it as a duplicate check
+2. Explicit always/never trigger → LEARN EVAL now, not at task end
+3. Call `learn_rule` directly without an extra recall/list overlap check:
+   `learn_rule(situation_text="merging a PR into main in this team's repos", outcome_text="use rebase; merge commits break the linear-history convention", agent_id="coder", suggested_tags=["git", "pr"], attributes={"project": "timem-mcp"})`
 
 ## Example 3 — Rule misled → helpful=false with exception
 
@@ -31,17 +32,17 @@ a docs-only change and the 20-minute suite added no value.
 1. `record_rule_outcome(rule_id="...", helpful=false, note="exception: docs-only changes — full suite adds no signal; rule needs a code-change condition")`
 2. `triggered_refine=true` (default) lets the backend narrow the rule
 
-## Example 4 — Near-duplicate → update instead of learn
+## Example 4 — Explicitly revise a known rule
 
-**Context:** Task taught "502 from MCP mount = port mismatch in TiMEM_API_HOST"; recall shows
-an existing rule "502 errors → check TiMEM_API_HOST port".
+**Context:** The user identifies a known rule and explicitly asks to add the
+`docker-compose` port-mapping condition.
 
 **Actions:**
 
-1. Overlap likely → do **not** `learn_rule`
+1. Use the already-known `rule_id`; do not run a speculative duplicate search
 2. `update_rule(rule_id="...", manual_lesson="502 from MCP mount or SDK → check TiMEM_API_HOST port mapping in docker-compose first")`
 
-## Example 5 — Empty recall is normal
+## Example 5 — Mandatory recall may be empty
 
 **User:** "帮我评审这个候选人简历"（该领域的第一个任务）
 
@@ -49,6 +50,9 @@ an existing rule "502 errors → check TiMEM_API_HOST port".
 
 1. `recall_rules(query_text="backend candidate resume review rules", agent_id="hr-reviewer")` → 0 rules
 2. Proceed with the review normally — no invented constraints, no forced learn
+
+The same baseline call is required for greetings, clarification questions, and tiny one-off
+requests; use a concise query and proceed normally when recall is empty.
 
 ## Example 6 — Fact, not rule → memory skill
 
@@ -62,7 +66,15 @@ an existing rule "502 errors → check TiMEM_API_HOST port".
 Counter-example that **is** a rule: "记住：改端口前先查 docker-compose 的映射" →
 `learn_rule` (trigger: about to change a port; action: check the compose mapping first).
 
-## Example 7 — Delete on explicit request
+## Example 7 — Daily boundary: reusable rule vs one-off context
+
+- "以后帮我推荐餐厅时，把有香菜的菜排除掉。" → long-term, generalizable to
+  future restaurant recommendations, and explicit/actionable → `learn_rule(...)`
+- "我不吃香菜。" → plain durable preference → memory, not a rule
+- "这条消息别写得太正式。" or choosing the cheapest hotel once → current instance
+  or one choice, not evidence of a general rule → learn zero rules
+
+## Example 8 — Delete on explicit request
 
 **User:** "把那条『必须跑全量测试』的规则删掉吧"
 
@@ -71,7 +83,7 @@ Counter-example that **is** a rule: "记住：改端口前先查 docker-compose 
 1. `list_rules(agent_id="coder")` or `recall_rules` to locate the `rule_id`; confirm with the user if ambiguous
 2. `delete_rule(rule_id="...")` — archives the rule (not a hard delete)
 
-## Example 8 — User usage report
+## Example 9 — User usage report
 
 **User:** "看下我这个月用了多少次规则召回"
 

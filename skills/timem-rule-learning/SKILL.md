@@ -2,9 +2,9 @@
 name: timem-rule-learning
 description: >-
   Orchestrates the TiMEM rule-learning loop (recall, apply, grade, learn) via MCP atomic tools.
-  Use when TiMEM MCP is connected and the user corrects the agent's judgement, plan, or output,
-  states an always/never rule, asks to apply or manage learned rules, or a strategy is proven
-  to work or fail (规则, 记住以后都, 不要再, 复盘, always, never, don't do that again).
+  Use on every user turn whenever TiMEM MCP is connected: call recall_rules once before the
+  first substantive response or action, including simple or one-off requests. Then verify and
+  apply relevant hits, grade applied rules, and learn or revise reusable lessons when warranted.
 ---
 
 # TiMEM Rule Learning
@@ -30,19 +30,24 @@ skills (`create_memory`), not here.
 ## Task lifecycle checklist
 
 ```
-- [ ] 1. Task start / key decision → RECALL EVAL: could prior rules change what I do?
-- [ ] 2. If yes → recall_rules BEFORE acting (empty result is normal — proceed)
-- [ ] 3. Verify each hit vs current request/files; apply only what fits; track applied rule_ids
-- [ ] 4. Do the work
-- [ ] 5. Result known → record_rule_outcome per APPLIED rule (helpful=true/false + note)
-- [ ] 6. Task end → LEARN EVAL: verified reusable situation→action lesson? → learn_rule (0–3)
-      - Overlap likely → recall/list first, prefer update_rule over a near-duplicate
+- [ ] 1. Every user turn → recall_rules once BEFORE the first substantive response or action
+      (including simple/one-off requests; an empty result is normal — proceed)
+- [ ] 2. Verify each hit vs current request/files; apply only what fits; track applied rule_ids
+- [ ] 3. Do the work
+- [ ] 4. Result known → record_rule_outcome per APPLIED rule (helpful=true/false + note)
+- [ ] 5. Task end → LEARN EVAL: did this conversation or situation produce a reliable
+      situation→action rule that will remain useful across future similar situations?
+      - No → learn 0 rules
+      - Yes → learn_rule directly; one rule per judgement point, max 3
+      - Do not run recall/list solely to judge duplicates before learning
 ```
 
 ## Recall (summary)
 
-Recall when: new task start; risky, ambiguous, or repeated decisions; user asks to use or
-check rules. Skip for tiny one-off actions history cannot change.
+Make one mandatory baseline `recall_rules` call on every user turn, before the first
+substantive response or action. Never skip it for greetings, clarification questions,
+read-only answers, or tiny one-off requests. Additional recalls are allowed only when
+materially new decision context appears later in the same turn.
 
 | `mode` | Use |
 |--------|-----|
@@ -64,14 +69,32 @@ outcome is observable.
 
 ## Learn (summary)
 
-**LEARN EVAL at task end** — and immediately on explicit "记住/always/never" or a user
-correction. See [workflow.md](references/workflow.md) for triggers and the noise floor.
+At task end, ask one primary question:
+
+> Did the current conversation or situation reveal a reliable **"when X, do Y"** lesson
+> that is likely to remain useful across future similar situations?
+
+Learn only when the answer is clearly yes on all three dimensions:
+
+- **Long-term reusable:** useful beyond the current item, turn, date, or temporary state.
+- **Generalizable:** applies to a class of future similar situations within the current
+  user/agent scope—not merely this one instance.
+- **Reliable and actionable:** supported by an explicit durable instruction/correction or
+  a verified outcome, and names a concrete action.
+
+Otherwise learn **0** rules. Explicit "记住/always/never" wording or a correction triggers
+an immediate evaluation, not automatic learning. Plain facts/preferences belong in memory,
+static repo conventions in project files, and secrets nowhere. See
+[workflow.md](references/workflow.md) and [examples.md](references/examples.md).
 
 - `situation_text` = observable trigger **before** the decision (embedded for future recall)
 - `outcome_text` = verified result + the reusable lesson
+- `suggested_tags` follow the input's primary language. For Chinese input, use concise
+  Simplified Chinese for ordinary concepts; keep English only for established technical
+  terms, product/framework/language names, acronyms, commands, and code identifiers
 - One rule per judgement point; max **0–3** rules per task
-- Ordinary `learn_rule` creates a rule (`action=created`, `merged_into=null`) — when overlap
-  is likely, recall/list first and prefer `update_rule`
+- Backend governance is disabled by default. Temporarily do not judge overlap or run a
+  pre-learn recall/list duplicate check; call `learn_rule` directly for a verified lesson
 
 ## Revise vs re-learn vs archive
 
@@ -91,9 +114,11 @@ For recall, `recall_billable_tokens` is embedding tokens plus judge-model total 
 
 - Do **not** learn facts or preferences without a situation→action lesson — that is `create_memory` (memory skills)
 - Do **not** learn before the outcome is verified; no hindsight-only conclusions in `situation_text`
+- Do **not** skip the mandatory per-turn recall because the request seems simple or one-off
 - Do **not** treat recalled rules as authoritative — verify vs current request and files; empty recall ≠ invent constraints
 - Do **not** call `record_rule_outcome` for recalled-but-unapplied rules
-- Do **not** learn a near-duplicate when overlap is likely — recall/list first, prefer `update_rule`
+- Do **not** use recall/list solely to judge duplicates before `learn_rule`; the mandatory
+  per-turn recall is for applying rules, not for gating learning
 - Do **not** put secrets or private data into rules
 - Do **not** use a random `agent_id` per turn or session
 

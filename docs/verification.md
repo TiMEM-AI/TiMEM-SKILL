@@ -49,11 +49,11 @@ Manual checks (requires timem-mcp connected):
 
 | # | Input | Expect |
 |---|-------|--------|
-| 1 | 「不要用 merge commit，以后都 rebase」 | overlap check → **learn_rule** (explicit never; situation + lesson) |
-| 2 | New task 「把这个 PR 合进 main」 | **recall_rules** before acting → apply → **record_rule_outcome** after result known |
+| 1 | 「不要用 merge commit，以后都 rebase」 | mandatory per-turn recall (not dedupe) → direct **learn_rule** |
+| 2 | Any user turn 「把这个 PR 合进 main」 | **recall_rules** before acting → apply → **record_rule_outcome** after result known |
 | 3 | Recall returns 0 rules | Proceed normally; no invented constraints, no forced learn |
 | 4 | 「记住我们后端端口是 8000」 | **create_memory** (fact, no situation→action lesson), **no** learn_rule |
-| 5 | Lesson overlaps an existing rule | recall/list → **update_rule**, no near-duplicate learn |
+| 5 | Lesson may overlap an existing rule | no duplicate judgement or extra recall/list → direct **learn_rule** while governance is off |
 | 6 | Recalled rule misled on this task | record_rule_outcome(**helpful=false**, note=exception) |
 | 7 | 「把那条规则删了」 | list/recall to find rule_id → confirm → **delete_rule** |
 | 8 | 「看下我本月 recall 用量」 | **get_rule_usage_report** summary/daily; explain `recall_billable_tokens` |

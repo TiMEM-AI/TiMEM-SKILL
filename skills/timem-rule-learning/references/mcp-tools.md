@@ -14,7 +14,8 @@ up to ~120 s — they invoke backend LLM paths.
 
 ## `recall_rules`
 
-Recall rules from one caller-owned retrieval query. Empty result is normal.
+Recall rules from one caller-owned retrieval query. Call it once on every user turn before
+the first substantive response or action; empty result is normal.
 
 | Parameter | Required | Notes |
 |-----------|----------|-------|
@@ -54,11 +55,12 @@ Create a reusable rule from a situation and its verified outcome.
 | `situation_text` | **Yes** | Observable trigger **before** the decision; 1–4000 chars |
 | `outcome_text` | **Yes** | Verified result + the reusable lesson; 1–4000 chars |
 | `agent_id` | Recommended | Stable role id |
-| `suggested_tags` | No | Up to 32 short topical tags; not hyper-specific |
+| `suggested_tags` | No | Up to 32 short topical tags in the input's primary language; for Chinese input, use Chinese for ordinary concepts and keep English only for established technical terms, names, acronyms, commands, or code identifiers |
 | `attributes` | No | Stable keys (`project`, `domain`, `stage`) for recall-time filtering; max 32 top-level keys / 16 KiB |
 
-Ordinary calls return `action="created"` and `merged_into=null`. When overlap is likely,
-recall/list first and prefer `update_rule`.
+With backend governance disabled by default, ordinary calls return `action="created"` and
+`merged_into=null`. Temporarily do not run recall/list solely to judge duplicates before
+learning; call `learn_rule` directly for each verified lesson.
 
 ---
 
@@ -133,5 +135,5 @@ Read-only usage for the authenticated user. The tool does not accept `user_id`.
 | Type | Name | Use |
 |------|------|-----|
 | Resource | `timem://guides/rule-learning` | Server-side loop guide |
-| Prompt | `rule_task_start` | Recall applicable rules at task start |
-| Prompt | `rule_session_wrap_up` | Grade applied rules + learn 0–3 new rules at task end |
+| Prompt | `rule_task_start` | Prepare the mandatory recall before responding or acting |
+| Prompt | `rule_session_wrap_up` | Grade applied rules + run LEARN EVAL; conditionally learn 0–3 rules |

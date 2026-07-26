@@ -15,9 +15,11 @@ the memory skills.
 
 ## Recall workflow
 
-1. **RECALL EVAL** — new task start; key, risky, ambiguous, or repeated decision; recurring
-   domain; user asks to use/check rules. Skip only when history cannot change the answer.
-2. **Build inputs** — `query_text`: one concise retrieval query (required).
+1. **Mandatory per-turn recall** — on every user turn, call `recall_rules` once before the
+   first substantive response or action. This includes greetings, clarification questions,
+   read-only answers, and tiny one-off requests. Never silently skip the baseline call.
+2. **Build inputs** — derive one concise, non-empty `query_text` from the current request and
+   active task context.
    For `judged` / `auto`, add `judge_scene_text` (decision point) and
    `judge_context_text` (request, evidence, constraints, code or candidate details).
 3. **Call**:
@@ -38,6 +40,9 @@ the memory skills.
    request, files, and higher-priority instructions; apply only what fits and call out
    conflicts. Track the `rule_id` of every rule that actually influences an action.
 5. **Empty result is normal** — no applicable rules yet; proceed without inventing constraints.
+6. **Avoid duplicate baseline calls** — the mandatory call also satisfies recall for the
+   current decision when its query already covers that context. Recall again in the same turn
+   only after materially new decision context appears.
 
 ## Grade workflow (`record_rule_outcome`)
 
@@ -50,25 +55,37 @@ the memory skills.
 
 ## Learn workflow (LEARN EVAL)
 
-Run at task end, and immediately on explicit triggers:
+`LEARN EVAL` is a judgement step, not an automatic `learn_rule` call. At task end, ask:
 
-| Trigger | Example |
-|---------|---------|
-| Explicit remember / always / never | "记住：以后 PR 一律 rebase，不要 merge commit" |
-| User corrects agent judgement / plan / output | "不是这样，先查 docker-compose 端口映射" |
-| Strategy proven to work or fail | Probing for production evidence exposed a demo-only claim |
-| Repeated mistake that generalizes | Same 502 root cause hit twice across tasks |
+> Did this conversation or situation reveal a reliable **"when X, do Y"** rule that will
+> remain useful across future similar situations?
 
-### Noise floor — do NOT learn (only valid skip reasons)
+Also evaluate immediately after explicit "记住/以后都/always/never" wording, a user
+correction, or a clearly proven success/failure. These are evaluation triggers, not automatic
+approval to learn.
 
-- One-off fact, preference, or context with no situation→action shape → `create_memory`
-  (matching memory skill) instead
-- Unverified guess or unclosed debate; outcome not yet observed
-- Transient status ("breakpoint at L42"), noisy transcripts, raw logs
-- Secrets or private data
-- Broad advice with no trigger ("be careful", "写代码要规范")
-- Static team convention that belongs in AGENTS.md / project files
-- Near-duplicate of an existing rule → `update_rule` instead
+### Core decision
+
+Learn only when all three are clearly true:
+
+1. **Long-term reusable** — useful after the current item, turn, date, or temporary state.
+2. **Generalizable** — applies to a class of future similar situations, not only this
+   instance. Generality is within the current `user_id` + `agent_id` scope; it need not be
+   universal for every user or project.
+3. **Reliable and actionable** — supported by an explicit durable instruction/correction or
+   a verified outcome, and expressible as an observable situation plus a concrete action.
+
+If any point is false or uncertain, learn **0** rules. Do not force ordinary task details
+into a reusable lesson.
+
+### Route or skip
+
+- Durable fact/preference without a situation→action lesson → matching memory skill.
+- Static repository/team convention → `AGENTS.md` or project files.
+- Current-only request, transient status, unverified inference, raw log, secret/private data,
+  or vague advice → do not persist as a rule.
+- One choice or user silence is not evidence of a long-term rule. An explicit future
+  instruction is sufficient evidence; an inferred strategy needs a verified result.
 
 ### Writing quality
 
@@ -76,15 +93,25 @@ Run at task end, and immediately on explicit triggers:
   situation will look next time (it is embedded for recall). No hindsight conclusions.
 - `outcome_text` — verified result + the reusable lesson or action.
 - One rule per judgement point; split unrelated lessons into separate calls.
-- `suggested_tags` — short topical tags; avoid tags so specific they never match again.
+- `suggested_tags` — short topical tags in the input's primary language; avoid tags so
+  specific they never match again. When the input is mainly Chinese, use concise Simplified
+  Chinese for ordinary concepts. Keep English only for established technical terms,
+  product/framework/language names, acronyms, commands, or code identifiers (for example,
+  `MCP`, `API`, `LangGraph`, `Python`, `git rebase`). Do not turn ordinary Chinese concepts
+  such as “简历评估” into English tags such as `resume evaluation`.
 - `attributes` — stable structured keys (`project`, `domain`, `stage`) for recall filtering.
-- Budget: **0–3** rules per task; skip when nothing generalizes.
+- Budget: **0–3** rules per task; keep only distinct, high-value lessons. Zero is normal.
 
-### Near-duplicate policy
+### Duplicate handling — temporarily disabled
 
-Ordinary `learn_rule` creates a new rule and returns `action="created"` with
-`merged_into=null`. When overlap is likely, call `recall_rules` or `list_rules` first and
-prefer `update_rule` over learning a near-duplicate.
+Do not assess whether a proposed lesson overlaps an existing rule, and do not call
+`recall_rules` or `list_rules` solely for a duplicate check before learning. The mandatory
+per-turn recall remains, but it is for applying relevant rules and is not a learning gate.
+With backend governance disabled by default, call `learn_rule` directly for each verified
+lesson; ordinary calls create a rule with `action="created"` and `merged_into=null`.
+
+Use `update_rule` only when a specific existing rule is already known and explicitly needs
+manual revision, not as the result of a speculative overlap search.
 
 ## Update and delete
 
