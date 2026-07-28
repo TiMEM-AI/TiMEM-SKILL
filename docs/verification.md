@@ -57,6 +57,7 @@ Manual checks (requires timem-mcp connected):
 | 6 | Recalled rule misled on this task | record_rule_outcome(**helpful=false**, note=exception) |
 | 7 | 「把那条规则删了」 | list/recall to find rule_id → confirm → **delete_rule** |
 | 8 | 「看下我本月 recall 用量」 | **get_rule_usage_report** summary/daily; explain `recall_billable_tokens` |
+| 9 | Agent prepares `learn_rule` with attributes/tags | native object/array arguments; never JSON-stringified values |
 
 ## Install smoke test
 

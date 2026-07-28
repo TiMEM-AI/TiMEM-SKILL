@@ -10,6 +10,14 @@ pass one stable `agent_id` per agent role (default `"default"`). Backend: `/api/
 Core loop tools (`learn_rule`, `recall_rules`, `record_rule_outcome`, `update_rule`) may take
 up to ~120 s — they invoke backend LLM paths.
 
+All structured arguments must keep their native MCP JSON types. Pass `attributes` and
+`filters` as objects/maps and tag/key collections as arrays. Never call `JSON.stringify`
+or put JSON text inside a string. For example,
+`attributes={"project": "timem-mcp"}` is valid, while
+`attributes="{\"project\":\"timem-mcp\"}"` is a compatibility-only form that MCP and the
+platform API normalize. Agents must not generate the encoded form. Malformed JSON or a
+value that decodes to the wrong shape is rejected before business logic runs.
+
 ---
 
 ## `recall_rules`
@@ -25,9 +33,9 @@ the first substantive response or action; empty result is normal.
 | `agent_id` | Recommended | Stable role id |
 | `mode` | No | `similarity` (default, retrieval only) / `judged` (complete filtered pool) / `auto` (retrieve `top_k`, then judge with fallback) |
 | `top_k` | No | Default 5 (1–50) |
-| `tags_hint` | No | Up to 32 tags; biases retrieval without hard-filtering |
-| `filters` | No | Exact-match scalar attributes; max 16 keys / 8 KiB |
-| `include_missing_filter_keys` | No | Up to 32 filter keys that should NOT exclude rules lacking that attribute |
+| `tags_hint` | No | Native array of up to 32 tags; biases retrieval without hard-filtering |
+| `filters` | No | Native object/map of exact-match scalar attributes; max 16 keys / 8 KiB; never stringify |
+| `include_missing_filter_keys` | No | Native array of up to 32 filter keys that should NOT exclude rules lacking that attribute |
 
 ```
 recall_rules(
@@ -55,8 +63,8 @@ Create a reusable rule from a situation and its verified outcome.
 | `situation_text` | **Yes** | Observable trigger **before** the decision; 1–4000 chars |
 | `outcome_text` | **Yes** | Verified result + the reusable lesson; 1–4000 chars |
 | `agent_id` | Recommended | Stable role id |
-| `suggested_tags` | No | Up to 32 short topical tags in the input's primary language; for Chinese input, use Chinese for ordinary concepts and keep English only for established technical terms, names, acronyms, commands, or code identifiers |
-| `attributes` | No | Stable keys (`project`, `domain`, `stage`) for recall-time filtering; max 32 top-level keys / 16 KiB |
+| `suggested_tags` | No | Native array of up to 32 short topical tags in the input's primary language; for Chinese input, use Chinese for ordinary concepts and keep English only for established technical terms, names, acronyms, commands, or code identifiers |
+| `attributes` | No | Native object/map of stable keys (`project`, `domain`, `stage`) for recall-time filtering; max 32 top-level keys / 16 KiB; never stringify |
 
 With backend governance disabled by default, ordinary calls return `action="created"` and
 `merged_into=null`. Temporarily do not run recall/list solely to judge duplicates before
@@ -86,9 +94,9 @@ Patch rule metadata or manually revise its text. At least one update field is re
 | `rule_id` | **Yes** | Rule to update |
 | `manual_situation` | No | Revised trigger; **re-embedded** — changes future recall matching |
 | `manual_lesson` | No | Revised lesson text only |
-| `attributes` | No | **Merged** key-by-key by default |
+| `attributes` | No | Native object/map, **merged** key-by-key by default; never stringify |
 | `replace_attributes` | No | `true` overwrites the whole attributes mapping |
-| `trigger_tags` | No | **Replaces** the whole tag set |
+| `trigger_tags` | No | Native array that **replaces** the whole tag set |
 | `name` / `is_enabled` / `status` | No | Metadata curation; status: `active`, `archived`, `disabled`, `pending_review`, `deprecated`, `superseded` |
 
 ---

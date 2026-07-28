@@ -26,6 +26,7 @@ skills (`create_memory`), not here.
 | `agent_id` | **One stable id per agent role** (e.g. `coder`, `reviewer`); default `default`. Never random per turn or session |
 | `user_id` | Omit — resolved from `TiMEM_USER_ID` |
 | Project scope | Not `session_id`: learn with `attributes={"project": "<repo>"}`, recall with `filters` (+ `include_missing_filter_keys`) — see [workflow.md](references/workflow.md) |
+| Structured arguments | Pass `attributes` / `filters` as native objects and tag collections as native arrays. Never JSON-stringify or double-encode them |
 
 ## Task lifecycle checklist
 
@@ -89,6 +90,8 @@ static repo conventions in project files, and secrets nowhere. See
 
 - `situation_text` = observable trigger **before** the decision (embedded for future recall)
 - `outcome_text` = verified result + the reusable lesson
+- Structured arguments keep their native MCP JSON shapes: `attributes` is an object and
+  `suggested_tags` is an array. Never pass JSON text inside a string
 - `suggested_tags` follow the input's primary language. For Chinese input, use concise
   Simplified Chinese for ordinary concepts; keep English only for established technical
   terms, product/framework/language names, acronyms, commands, and code identifiers
@@ -119,6 +122,9 @@ For recall, `recall_billable_tokens` is embedding tokens plus judge-model total 
 - Do **not** call `record_rule_outcome` for recalled-but-unapplied rules
 - Do **not** use recall/list solely to judge duplicates before `learn_rule`; the mandatory
   per-turn recall is for applying rules, not for gating learning
+- Do **not** stringify structured tool arguments. For example,
+  pass `attributes={"project": "timem-mcp"}` directly. Compatibility parsing may
+  recover `attributes="{\"project\":\"timem-mcp\"}"`, but agents must not rely on it
 - Do **not** put secrets or private data into rules
 - Do **not** use a random `agent_id` per turn or session
 

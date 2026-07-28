@@ -22,6 +22,9 @@
 3. Call `learn_rule` directly without an extra recall/list overlap check:
    `learn_rule(situation_text="merging a PR into main in this team's repos", outcome_text="use rebase; merge commits break the linear-history convention", agent_id="coder", suggested_tags=["git", "pr"], attributes={"project": "timem-mcp"})`
 
+   `suggested_tags` is a native array and `attributes` is a native object. Do not quote or
+   JSON-stringify either structured value.
+
 ## Example 3 — Rule misled → helpful=false with exception
 
 **Context:** Recalled rule "always run full test suite before push" was applied; the task was

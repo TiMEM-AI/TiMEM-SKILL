@@ -13,6 +13,26 @@ the memory skills.
     missing a filtered key are excluded. Add `include_missing_filter_keys=["project"]` to
     keep general (cross-project) rules visible alongside project-scoped ones.
 
+## MCP argument shapes
+
+Preserve native JSON types when calling tools. Pass `attributes` and `filters` as objects;
+pass `suggested_tags`, `tags_hint`, `include_missing_filter_keys`, and `trigger_tags` as
+arrays. Never call `JSON.stringify` or put JSON text inside a string.
+
+```
+# Correct
+attributes={"project": "timem-mcp"}
+suggested_tags=["git", "pr"]
+
+# Compatibility fallback only — agents must not generate this
+attributes="{\"project\":\"timem-mcp\"}"
+suggested_tags="[\"git\",\"pr\"]"
+```
+
+MCP and the platform API normalize valid JSON-encoded objects/lists from legacy callers.
+Malformed JSON or an encoded value of the wrong shape still fails validation. Treat that
+error as a malformed tool call: correct the argument shapes and retry once.
+
 ## Recall workflow
 
 1. **Mandatory per-turn recall** — on every user turn, call `recall_rules` once before the
@@ -100,6 +120,7 @@ into a reusable lesson.
   `MCP`, `API`, `LangGraph`, `Python`, `git rebase`). Do not turn ordinary Chinese concepts
   such as “简历评估” into English tags such as `resume evaluation`.
 - `attributes` — stable structured keys (`project`, `domain`, `stage`) for recall filtering.
+  Pass the mapping directly, never as a JSON-encoded string.
 - Budget: **0–3** rules per task; keep only distinct, high-value lessons. Zero is normal.
 
 ### Duplicate handling — temporarily disabled
