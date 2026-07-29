@@ -6,7 +6,7 @@ When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the
 
 ### Per-turn workflow (atomic MCP tools)
 
-1. Must / Should / Skip → if not Skip, `search_memories(..., search_tier=S*)` **before** codebase grep/read
+1. Coding turn → **prefer TiMEM MCP**; Must / Should / Skip → default search; if not Skip, `search_memories(..., search_tier=S*)` **first** (before grep/read; unsure → Should/`S3`)
 2. Verify hits vs code and AGENTS.md; if `count=0` read `memory_gap` / `elevate_create`
 3. Codebase work
 4. **Gated WRITE EVAL** → create only on remember / decision closed / correction / project orientation / closure
@@ -14,7 +14,9 @@ When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the
 
 ### Rules
 
+- Prefer calling `search_memories` on programming turns; do not skip MCP just because the repo might answer
 - Use `search_memories` / `create_memory` / `delete_memory` only; always pass `search_tier` when searching
+- Skip only for typo/format/trivia
 - Do **not** treat project overview questions as Skip
 - AGENTS.md = team conventions; TiMEM = decisions + **code-verified project orientation** (`domain=coding`)
 

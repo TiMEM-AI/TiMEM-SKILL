@@ -1,13 +1,15 @@
 # Coding Search Tier model
 
-Classify each user message **before** calling `search_memories`. Decide with the **Must / Should / Skip** table first; map to an `S*` value for the `search_tier` parameter. Do not search every turn.
+Classify each user message **before** calling `search_memories`. Decide with the **Must / Should / Skip** table first; map to an `S*` value for the `search_tier` parameter.
+
+**Default bias: search (prefer MCP).** Prefer Must/Should over Skip. When unsure whether memories could help → treat as **Should** (`S3`) and call `search_memories` before exploratory codebase tools. Mid-task follow-ups on the same coding topic still search unless Skip clearly applies. Do not skip MCP solely because grep/read might find the answer.
 
 ## Primary buckets
 
 | Bucket | When | Map to `search_tier` | Action |
 |--------|------|----------------------|--------|
 | **Must** | Explicit recall; delete lookup; cross-project planning; project module / architecture / design questions | `S0`, `S1`, `S3` (overview), `S6` | **Search**; pass `search_tier` |
-| **Should** | Ongoing project work with known repo; repo unclear (clarify first); before arch / cross-module edits; recurring debug | `S2`, `S3` (ongoing), `S4`, `S5` | **Search** (after clarify if `S2`); pass `search_tier` |
+| **Should** | Any project-bound technical turn with known repo (implement, edit, explain, review, refactor, debug, follow-up); repo unclear (clarify first); before arch / cross-module edits; recurring debug | `S2`, `S3` (ongoing), `S4`, `S5` | **Search** (after clarify if `S2`); pass `search_tier` |
 | **Skip** | Typo / single-line format only; unrelated trivia; zero-project syntax | `S-skip` | **Do not search** |
 
 ### Skip (narrow only)
@@ -18,11 +20,15 @@ Use Skip **only** for:
 - Unrelated chit-chat with no project context
 - Generic syntax with zero project context (e.g. "Python list comprehension syntax")
 
+When in doubt between Should and Skip → **Should** (search).
+
 ### Do NOT classify as Skip
 
 - "模块有哪些" / "架构是什么" / project overview → **Must** (`S3`)
+- Implement / edit / explain / review / refactor in a known repo → **Should** (`S3` / `S4`)
 - Technical discussion when `session_id` applies → **Should** or **Must**
 - Historical decisions / lessons → **Must** (`S0`) or **Should** (`S3`)
+- Follow-up turns on an ongoing coding task → **Should** (`S3`) unless the turn is a pure typo/format fix
 
 **Note:** AGENTS.md may hold static conventions — still **search** for historical decisions, lessons, or corrections not fully captured there.
 
@@ -33,7 +39,7 @@ Use Skip **only** for:
 | **S0** | User explicitly asks to recall | `limit=10` |
 | **S1** | Cross-project planning | no `session_id`; `limit=10` |
 | **S2** | Project work but **repo unclear** | Clarify repo → then search with `session_id` |
-| **S3** | Project-bound technical work (incl. module/arch overview) | `session_id` + required `query_text` |
+| **S3** | Project-bound technical work (incl. module/arch overview, implement, edit, explain) | `session_id` + required `query_text` |
 | **S4** | Before architecture / cross-module edits | query expresses intent |
 | **S5** | Debugging recurring symptom | symptom keywords in query |
 | **S6** | Before `delete_memory` | search to obtain `memory_id` |
@@ -59,7 +65,7 @@ search_memories(
   domain="coding",
   session_id="<repo-name>",  # omit for S1; required when repo known
   search_tier="S3",  # required for coding — enables empty-search elevate_create
-  limit=5,  # task-start; use 10 for S0 / S1
+  limit=5,  # task-start / ongoing; use 10 for S0 / S1
 )
 ```
 

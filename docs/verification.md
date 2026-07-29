@@ -19,10 +19,11 @@ Manual checks (requires timem-mcp connected):
 | 1 | 「记忆模块有哪些」 | **Must/S3 search** (`search_tier`) → read code → **create** (convention / `project_discovery`) |
 | 2 | 「改这行缩进」 | **Skip**: no search, no create (no WRITE monologue) |
 | 3 | 「你记得 auth 怎么定的」 | **Must/S0 search**, `limit=10`, pass `search_tier` |
-| 4 | 讨论后「就先用 FastAPI 这样」 | **gated create** (decision) |
-| 5 | 多轮 debug 结束无「好了」但已有可复述结论 | **closure create** |
-| 6 | 第二次问「记忆模块有哪些」 | search hits prior convention → answer, **no duplicate create** |
-| 7 | 空搜模块概览 | read `memory_gap` / `elevate_create`; verify from code; then gated create |
+| 4 | 「给这个 API 加一个校验」 / mid-task follow-up | **Should/S3 search** before grep/edit (default bias) |
+| 5 | 讨论后「就先用 FastAPI 这样」 | **gated create** (decision) |
+| 6 | 多轮 debug 结束无「好了」但已有可复述结论 | **closure create** |
+| 7 | 第二次问「记忆模块有哪些」 | search hits prior convention → answer, **no duplicate create** |
+| 8 | 空搜模块概览 | read `memory_gap` / `elevate_create`; verify from code; then gated create |
 
 ## General (gated create)
 

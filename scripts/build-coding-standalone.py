@@ -207,8 +207,10 @@ def _condense_search_tier_for_standalone(text: str) -> str:
     # Collapse project technical subsection into one line after S* table.
     text = re.sub(
         r"\n### Project technical questions.*?(?=\n## |\n### |\Z)",
-        "\n\n`S3` overview/module/arch questions are **Must** (not Skip): "
-        "search first → verify → then read code; then `project_discovery` write gate.\n\n",
+        "\n\n`S3` overview/module/arch questions are **Must** (not Skip); "
+        "implement/edit/explain/follow-up → **Should**/`S3`. "
+        "When unsure → search. Flow: search first → verify → then read code; "
+        "then `project_discovery` write gate.\n\n",
         text,
         count=1,
         flags=re.DOTALL,

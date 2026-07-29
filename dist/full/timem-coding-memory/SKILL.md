@@ -1,16 +1,27 @@
 ---
 name: timem-coding-memory
 description: >-
-  Orchestrates TiMEM coding-scene memory recall and persistence via MCP atomic tools.
-  Use when TiMEM MCP is connected and the user is doing software development, debugging,
-  architecture decisions, or asks to recall technical context (代码, 调试, 架构, repo, 之前怎么定的).
-  Do not use for typo/single-line format-only fixes, non-technical chit-chat, or when TiMEM MCP
-  is not connected.
+  Prefer calling TiMEM MCP in programming scenes. Orchestrates coding-scene memory via
+  search_memories / create_memory. Use as the default skill whenever TiMEM MCP is connected
+  and the user is coding: implement, edit, debug, refactor, review, architecture, or recall
+  (代码, 实现, 改, 调试, 架构, repo, 之前怎么定的, PR, review). On coding turns, prefer
+  search_memories as an early tool call before exploratory grep/read — do not skip MCP just
+  because code might answer it. Skip only for typo/single-line format-only fixes,
+  non-technical chit-chat, or when TiMEM MCP is not connected.
 ---
 
 # TiMEM Coding Memory
 
 Orchestrate **coding** scene (`domain=coding`, `expert_id=coder`) memory search and create using MCP atomic tools only.
+
+## MCP preference (coding)
+
+When TiMEM MCP is connected and the turn is programming-related:
+
+1. **Prefer MCP** — call `search_memories` early (often first among tools), before exploratory codebase grep/read.
+2. **Do not under-call** — “I can just read the repo” is not a reason to skip MCP on coding turns.
+3. **Bias** — default Should/`S3` search; Skip is rare (typo / format / trivia only).
+4. **Write stays gated** — more search ≠ more `create_memory`; create only when WRITE EVAL gates hit.
 
 ## Prerequisites
 
@@ -33,8 +44,8 @@ Orchestrate **coding** scene (`domain=coding`, `expert_id=coder`) memory search 
 ## Per-turn checklist
 
 ```
-- [ ] 1. Classify Must / Should / Skip (references/search-tier.md) → map to search_tier S*
-- [ ] 2. If not Skip → search_memories(..., search_tier=S*) BEFORE exploratory grep/read
+- [ ] 1. Coding turn? Prefer MCP — classify Must / Should / Skip (default Should if unsure)
+- [ ] 2. If not Skip → search_memories(..., search_tier=S*) FIRST (before exploratory grep/read)
 - [ ] 3. Verify hits vs code and AGENTS.md; if count=0 read memory_gap / guidance / elevate_create
 - [ ] 4. Codebase work (read, grep, edit)
 - [ ] 5. Gated WRITE EVAL only (references/write-rubric.md) → conditional create_memory
@@ -43,12 +54,12 @@ Orchestrate **coding** scene (`domain=coding`, `expert_id=coder`) memory search 
 
 ## Search (summary)
 
-Classify **Must / Should / Skip** before searching. Do not search every turn. Always pass `search_tier` when searching.
+**Default bias: prefer MCP search.** Classify **Must / Should / Skip**; when unsure → **Should** (`S3`) and search. Skip is rare. Always pass `search_tier` when searching.
 
 | Bucket | Action |
 |--------|--------|
-| **Must** | Explicit recall, delete lookup, cross-project plan, module/arch/design Q → search |
-| **Should** | Ongoing project work, pre-arch edit, recurring debug; clarify repo if unclear → search |
+| **Must** | Explicit recall, delete lookup, cross-project plan, module/arch/design Q → **search** |
+| **Should** | Any ongoing project work (implement / edit / explain / review / debug / follow-up); pre-arch edit; clarify repo if unclear → **search** |
 | **Skip** | Typo / single-line format / trivia / zero-project syntax only → no search |
 
 Details: [references/search-tier.md](references/search-tier.md)
@@ -89,9 +100,10 @@ create_memory(
 
 ## Anti-patterns
 
+- Do **not** skip TiMEM MCP on coding turns because the answer “might be in the repo”
 - Do **not** classify project overview / module questions as Skip
 - Do **not** skip create for verified project orientation when WRITE is gated ("just read code" is not a valid reason)
-- Do **not** search every turn automatically
+- Do **not** Skip when uncertain — default to Should/`S3` search (including mid-task follow-ups)
 - Do **not** omit `search_tier` on coding `search_memories`
 - Do **not** paste full files or logs into `messages`
 
