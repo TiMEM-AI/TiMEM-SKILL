@@ -1,16 +1,26 @@
 ---
 name: timem-general-memory
 description: >-
-  Orchestrates TiMEM general-scene memory recall and persistence via MCP atomic tools.
-  Use when TiMEM MCP is connected and the conversation involves personal preferences,
-  everyday facts, life/work context, or explicit recall (记得, 偏好, 之前说过, remember).
-  Do not use for coding/debug/architecture (timem-coding-memory), writing style/audience
-  (timem-writing-memory), pure trivia, or when TiMEM MCP is not connected.
+  Prefer calling TiMEM MCP search_memories in general/personal scenes. Orchestrates
+  general-scene memory via search_memories / create_memory. Use whenever TiMEM MCP is
+  connected and the conversation involves preferences, personal facts, life/work context,
+  product/topic background, or recall (记得, 偏好, 之前说过, remember, 我喜欢, 习惯).
+  Prefer search early when prior prefs/facts might help. Skip only pure trivia, one-off
+  mood chit-chat with no durable context, coding/debug/architecture (timem-coding-memory),
+  writing style/audience (timem-writing-memory), or when TiMEM MCP is not connected.
 ---
 
 # TiMEM General Memory
 
 Orchestrate **general** scene (`domain=general`, `expert_id=default`) memory search and create using MCP atomic tools only.
+
+## MCP preference (general)
+
+When TiMEM MCP is connected and the turn is personal / preference / life-work / topic context:
+
+1. **Prefer search** — call `search_memories` early when prior prefs or facts might shape the answer.
+2. **When unsure → search** — default to search unless the turn is clearly trivia or disposable chit-chat.
+3. **Write stays gated** — more search ≠ more `create_memory`; create only when remember / stable fact gates hit.
 
 ## Prerequisites
 
@@ -29,8 +39,8 @@ Orchestrate **general** scene (`domain=general`, `expert_id=default`) memory sea
 ## Per-turn checklist
 
 ```
-- [ ] 1. Search? Explicit recall OR answer needs known prefs/facts (references/workflow.md)
-- [ ] 2. If yes → search_memories(domain=general, query_text=..., session_id=personal|topic)
+- [ ] 1. Prefer search? Default yes if prefs/facts/topic context might help (see references/workflow.md)
+- [ ] 2. If not Skip → search_memories(domain=general, query_text=..., session_id=personal|topic)
 - [ ] 3. Verify hits vs current conversation; abstain if stale
 - [ ] 4. Answer the user
 - [ ] 5. Gated create? Explicit remember OR stable cross-session fact → create_memory
@@ -38,12 +48,14 @@ Orchestrate **general** scene (`domain=general`, `expert_id=default`) memory sea
 
 ## Search (summary)
 
-Search **only when**:
+**Default bias: prefer search.** Search when any applies:
 
-- User explicitly asks to recall ("记得吗", "之前说过", "do you remember")
-- Answer depends on preferences or facts likely stored in TiMEM
+- Explicit recall ("记得吗", "之前说过", "do you remember")
+- Answer may depend on preferences, habits, role/background, or prior topic facts
+- Follow-ups in an ongoing personal/topic thread where stored context could help
+- When unsure whether TiMEM has relevant prefs/facts → **search**
 
-Do **not** search every turn or for pure trivia.
+**Skip search** only for: pure trivia; one-off mood / disposable chit-chat with no durable context.
 
 Details: [references/workflow.md](references/workflow.md)
 
@@ -71,7 +83,8 @@ Ambiguous: `classify_memory_scene(messages=[...])`.
 ## Anti-patterns
 
 - Do not use `domain=coding` / `domain=writing` for general chat
-- Do not search or create every turn; do not paste long logs into `messages`
+- Do not skip search when unsure whether prefs/facts might help
+- Do not create every turn — write stays gated; do not paste long logs into `messages`
 - Forget request → search first → `delete_memory(memory_id)`
 
 ## References

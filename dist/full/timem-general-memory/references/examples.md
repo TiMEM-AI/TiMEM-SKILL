@@ -33,8 +33,17 @@
 1. `search_memories(query_text="TiMEM 目标用户", domain="general", session_id="timem-product", limit=5)`
 2. Answer from verified hits or say no memory found.
 
-## Example 5 — Gate miss (no create)
+## Example 5 — Proactive preference search (no create)
+
+**User:** "帮我写一段自我介绍，语气按我平时的习惯来。"
+
+**Actions:**
+
+1. Prefer search → `search_memories(query_text="回答风格 语气 偏好", domain="general", session_id="personal", limit=5)`
+2. Answer using verified prefs; **no create** (no remember / new stable fact gate)
+
+## Example 6 — Gate miss (no create)
 
 **User:** "今天有点累，随便聊聊吧。"
 
-**Actions:** No create (noise floor: temporary mood / one-off chit-chat). No skip monologue.
+**Actions:** Skip search (disposable mood chit-chat). No create. No skip monologue.

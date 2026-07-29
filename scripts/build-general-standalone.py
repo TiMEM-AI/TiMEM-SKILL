@@ -222,8 +222,8 @@ def _condense_workflow_for_standalone(text: str) -> str:
 
 
 def _condense_examples(text: str) -> str:
-    """Keep examples 1–4; drop gate-miss duplicate of anti-patterns."""
-    keep = {1, 2, 3, 4}
+    """Keep examples 1–5; drop gate-miss duplicate of anti-patterns."""
+    keep = {1, 2, 3, 4, 5}
     parts = re.split(r"(?=## Example \d+)", text)
     intro = parts[0] if parts and not parts[0].startswith("## Example") else ""
     kept: list[str] = []
@@ -252,6 +252,10 @@ def _split_frontmatter(text: str) -> tuple[str, str]:
 
 
 def _rewrite_body_for_standalone(body: str) -> str:
+    body = body.replace(
+        "Prefer search? Default yes if prefs/facts/topic context might help (see references/workflow.md)",
+        "Prefer search? Default yes if prefs/facts/topic context might help (see General workflow below)",
+    )
     body = body.replace(
         "Search? Explicit recall OR answer needs known prefs/facts (references/workflow.md)",
         "Search? Explicit recall OR answer needs known prefs/facts (see General workflow below)",

@@ -25,14 +25,15 @@ Manual checks (requires timem-mcp connected):
 | 7 | 第二次问「记忆模块有哪些」 | search hits prior convention → answer, **no duplicate create** |
 | 8 | 空搜模块概览 | read `memory_gap` / `elevate_create`; verify from code; then gated create |
 
-## General (gated create)
+## General (proactive search + gated create)
 
 | # | Input | Expect |
 |---|-------|--------|
 | 1 | 「你记得我喜欢什么回答风格」 | **search** `domain=general` → answer from verified prefs |
-| 2 | 「请记住：解释用中文」 | **gated create** |
-| 3 | 「今天星期几」 | no search, no create |
-| 4 | 「今天有点累随便聊聊」 | no create (noise floor) |
+| 2 | 「帮我写自我介绍，按我平时习惯」 | **prefer search** (prefs may help); **no create** unless gate |
+| 3 | 「请记住：解释用中文」 | **gated create** |
+| 4 | 「今天星期几」 | no search, no create |
+| 5 | 「今天有点累随便聊聊」 | skip search; no create (noise floor) |
 
 ## Writing
 

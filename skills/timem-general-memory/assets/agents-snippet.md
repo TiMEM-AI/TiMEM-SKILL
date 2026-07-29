@@ -4,9 +4,9 @@ When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the
 
 ### Per-turn workflow
 
-1. Search only on explicit recall or when the answer needs known prefs/facts
+1. **Prefer search** when prefs/facts/topic context might help (unsure → search); skip only trivia / disposable chit-chat
 2. Verify hits vs current conversation
-3. **Gated create** only on remember / stable cross-session preference or fact
+3. **Gated create** only on remember / stable cross-session preference or fact (more search ≠ more create)
 4. Coding/writing tasks → use those skills (`domain=coding` / `domain=writing`)
 
 Canonical packages: `dist/full/timem-general-memory/` or `dist/standalone/timem-general-memory/`
