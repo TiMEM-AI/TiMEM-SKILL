@@ -1,26 +1,33 @@
 ---
 name: timem-general-memory
 description: >-
-  Prefer calling TiMEM MCP search_memories in general/personal scenes. Orchestrates
-  general-scene memory via search_memories / create_memory. Use whenever TiMEM MCP is
-  connected and the conversation involves preferences, personal facts, life/work context,
-  product/topic background, or recall (记得, 偏好, 之前说过, remember, 我喜欢, 习惯).
-  Prefer search early when prior prefs/facts might help. Skip only pure trivia, one-off
-  mood chit-chat with no durable context, coding/debug/architecture (timem-coding-memory),
-  writing style/audience (timem-writing-memory), or when TiMEM MCP is not connected.
+  Calls TiMEM MCP search_memories / create_memory for personal + office/general
+  memory (prefs, habits, role/background; durable work facts — decisions, owners,
+  deadlines, meeting conclusions, topic facts; cross-session context). Not a daily
+  work log. Use when TiMEM MCP is connected and the turn may depend on stored
+  prefs/facts — including without explicit recall wording (帮我, 习惯, 安排, 日程,
+  会议, 结论, 对接, 截止, 排期, 项目, 纪要, 偏好, 背景, 我是, 以后, 按我的, 记住,
+  记得, preference, habit, remember, schedule, meeting, deadline, owner,
+  background). Default: search early; when unsure → search. Skip only pure trivia,
+  disposable mood chit-chat, process-only narration with no durable conclusion,
+  coding/debug/architecture (timem-coding-memory), writing style/audience
+  (timem-writing-memory), or when MCP is disconnected.
 ---
 
 # TiMEM General Memory
 
 Orchestrate **general** scene (`domain=general`, `expert_id=default`) memory search and create using MCP atomic tools only.
 
+**Scope:** prefs/identity **and** durable office/topic facts. **Not** a daily work log.
+
 ## MCP preference (general)
 
-When TiMEM MCP is connected and the turn is personal / preference / life-work / topic context:
+**Search default on; write default off.** When TiMEM MCP is connected:
 
-1. **Prefer search** — call `search_memories` early when prior prefs or facts might shape the answer.
-2. **When unsure → search** — default to search unless the turn is clearly trivia or disposable chit-chat.
-3. **Write stays gated** — more search ≠ more `create_memory`; create only when remember / stable fact gates hit.
+1. **Default: call `search_memories` first** when prefs, habits, role/background, office/topic facts, or cross-session context could shape the answer — even if the user did not say remember/记得.
+2. **When unsure → search** — Skip only pure trivia, disposable mood chit-chat, or process-only narration with no durable conclusion.
+3. **Do not under-call** — “I can answer directly” / “this is work not about the person” is **not** a reason to skip search.
+4. **Write stays gated** — more search ≠ more `create_memory`; create only when remember / stable fact gates hit. No per-task closure auto-create.
 
 ## Prerequisites
 
@@ -32,43 +39,35 @@ When TiMEM MCP is connected and the turn is personal / preference / life-work / 
 | Field | Value |
 |-------|-------|
 | `domain` | `general` |
-| `session_id` | **Required** — `personal` for global prefs, or a stable topic name (e.g. `timem-product`). Never omit; never use random UUIDs. |
+| `session_id` | **Required** — `personal` for global prefs; stable topic/project name for office work (e.g. `timem-product`, `acme-q3`). Never omit; never use random UUIDs. |
 
 **Memory vs rule:** facts / preferences / context → `create_memory`; reusable "in situation X, do Y" → `learn_rule` (rule-learning skill).
 
 ## Per-turn checklist
 
 ```
-- [ ] 1. Prefer search? Default yes if prefs/facts/topic context might help (see references/workflow.md)
-- [ ] 2. If not Skip → search_memories(domain=general, query_text=..., session_id=personal|topic)
+- [ ] 1. Skip only trivia / mood / process-only with no conclusion; else search_memories FIRST
+- [ ] 2. search_memories(domain=general, query_text=3–12 words, session_id=personal|topic, limit=5)
 - [ ] 3. Verify hits vs current conversation; abstain if stale
 - [ ] 4. Answer the user
-- [ ] 5. Gated create? Explicit remember OR stable cross-session fact → create_memory
+- [ ] 5. Gated create? remember / stable pref·role / durable work·topic fact confirmed → create_memory
 ```
 
 ## Search (summary)
 
-**Default bias: prefer search.** Search when any applies:
+**Default: search** on recall; prefs/role; prior topic/office facts; office tasks (纪要/汇报/排期/安排); personal/project follow-ups; or when unsure. **Even without** 习惯/记得.
 
-- Explicit recall ("记得吗", "之前说过", "do you remember")
-- Answer may depend on preferences, habits, role/background, or prior topic facts
-- Follow-ups in an ongoing personal/topic thread where stored context could help
-- When unsure whether TiMEM has relevant prefs/facts → **search**
-
-**Skip search** only for: pure trivia; one-off mood / disposable chit-chat with no durable context.
+**Skip search** only: trivia; disposable mood; process-only with no durable conclusion ("刚开完会挺累").
 
 Details: [references/workflow.md](references/workflow.md)
 
 ## Write (summary)
 
-**Gated create** — only when:
+**Gated create** only when: remember/save; stable preference or role/background; **durable** work/topic fact confirmed (decision, owner, deadline, meeting conclusion).
 
-- User says remember / save
-- A **stable** preference, role/background, or cross-session fact is confirmed
+Do **not** create episodic work logs, transient state, mood, guesses, or coding/writing content. No auto-create on task end without a gate.
 
-Do **not** create one-off chit-chat, temporary mood, unverified guesses, or content that belongs in coding/writing scenes.
-
-Max **0–5** memories per task.
+Max **0–5**/task. No gate → no create, no skip monologue.
 
 ## Scene boundary
 
@@ -76,15 +75,17 @@ Max **0–5** memories per task.
 |-----------------|-----|
 | Repo, debug, architecture | `timem-coding-memory` (`domain=coding`) |
 | Copy, tone, audience, draft style | `timem-writing-memory` (`domain=writing`) |
-| Personal prefs / general facts | this skill (`domain=general`) |
+| Prefs / office durable facts / topic context | this skill (`domain=general`) |
 
 Ambiguous: `classify_memory_scene(messages=[...])`.
 
 ## Anti-patterns
 
-- Do not use `domain=coding` / `domain=writing` for general chat
+- Do not treat office turns as out-of-scope because they are “about work not about the person”
+- Do not skip search because the model can answer without tools or the user omitted 记得/习惯
 - Do not skip search when unsure whether prefs/facts might help
-- Do not create every turn — write stays gated; do not paste long logs into `messages`
+- Do not create every turn or every finished task — write stays gated; not a work diary
+- Do not paste long logs into `messages`
 - Forget request → search first → `delete_memory(memory_id)`
 
 ## References

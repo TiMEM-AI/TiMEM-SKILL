@@ -2,7 +2,7 @@
 
 Classify each user message **before** calling `search_memories`. Decide with the **Must / Should / Skip** table first; map to an `S*` value for the `search_tier` parameter.
 
-**Default bias: search (prefer MCP).** Prefer Must/Should over Skip. When unsure whether memories could help → treat as **Should** (`S3`) and call `search_memories` before exploratory codebase tools. Mid-task follow-ups on the same coding topic still search unless Skip clearly applies. Do not skip MCP solely because grep/read might find the answer.
+**Default: search (call MCP).** Prefer Must/Should over Skip. When unsure whether memories could help → treat as **Should** (`S3`) and call `search_memories` before exploratory codebase tools. Mid-task follow-ups on the same coding topic still search unless Skip clearly applies. Do **not** under-call: skip MCP solely because grep/read or context might answer is invalid.
 
 ## Primary buckets
 

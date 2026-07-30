@@ -11,12 +11,14 @@ Install [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) first, then install o
 
 | Project type | Skills |
 |--------------|--------|
-| Software development | **`timem-coding-memory`** from `dist/` (full or standalone); optional **`timem-general-memory`** from `dist/` |
+| Software development | **`timem-coding-memory`** from `dist/standalone/` (recommended) or `dist/full/`; optional **`timem-general-memory`** |
 | Content / copywriting | `timem-writing-memory` (+ optional general from `dist/`) |
-| General assistant | **`timem-general-memory`** from `dist/` (full or standalone) |
+| General assistant | **`timem-general-memory`** from `dist/standalone/` (recommended) or `dist/full/` |
 | Agent self-improvement (rules) | `timem-rule-learning` (self-contained) |
 | Knowledge RAG | `timem-knowledge` |
-| Full TiMEM | Coding + general from `dist/` + other skills from `skills/` as needed |
+| Full TiMEM | Coding + general from `dist/standalone/` + other skills from `skills/` as needed |
+
+**Prefer standalone** for clients that progressively load only `SKILL.md` (critical search/write rules stay in one file). Use `dist/full/` when you want separate `references/` on disk.
 
 **Memory coding/general/writing packages no longer require a separate `shared` install** — MCP tool docs are inlined into each skill's `references/mcp-tools.md` (synced from `skills/shared/mcp-tools.md`).
 

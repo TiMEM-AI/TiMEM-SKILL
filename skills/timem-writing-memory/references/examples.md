@@ -15,7 +15,7 @@
 
 **Actions:**
 
-1. `create_memory(domain="writing", session_id="product-copy", messages=[user turn, assistant confirmation])`
+1. Gate hits → `create_memory(domain="writing", session_id="product-copy", messages=[user turn, assistant confirmation])`
 
 ## Example 3 — Series continuity
 
@@ -26,8 +26,17 @@
 1. `search_memories(query_text="blog 风格 系列", domain="writing", session_id="blog-2026", limit=5)`
 2. Write draft; create only if new durable style rule emerges.
 
-## Example 4 — No memory needed
+## Example 4 — Draft without recall wording (search, no create)
+
+**User:** "写一段产品介绍。"
+
+**Actions:**
+
+1. Default search → `search_memories(query_text="产品介绍 风格 受众", domain="writing", session_id="product-copy", limit=5)`
+2. Draft using verified constraints if any; **no create** unless a new durable rule is confirmed
+
+## Example 5 — No memory needed
 
 **User:** "把这段改成被动语态。" (one-off edit, no new style rule)
 
-**Actions:** Edit text; skip create unless user asks to remember a rule.
+**Actions:** Edit text; skip search/create unless user asks to remember a rule.

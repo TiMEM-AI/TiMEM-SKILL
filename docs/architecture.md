@@ -72,9 +72,9 @@ Skills orchestrate when to call MCP atomic memory tools. Optional helper: `class
 
 | Scene | Search model | Verify | Write rubric |
 |-------|--------------|--------|--------------|
-| general | Explicit recall or answer needs prefs/facts | vs current conversation | gated create (stable prefs/facts; 0–5/task) |
-| writing | Style/audience recall | vs draft intent | Style, tone, audience |
-| coding | Must/Should/Skip → S0–S-skip; pass `search_tier` | vs code + AGENTS.md | gated WRITE EVAL (decision/constraint/lesson/…) |
+| general | Default search when prefs or durable office/topic facts may help; Skip = trivia / mood / process-only | vs current conversation | gated create (remember / stable pref·role / durable work·topic fact; 0–5/task; not a work log) |
+| writing | Default search when style/audience may help | vs draft intent | gated create (style, tone, audience) |
+| coding | Must/Should/Skip → S0–S-skip; pass `search_tier`; default Should | vs code + AGENTS.md | gated WRITE EVAL (decision/constraint/lesson/…) |
 | knowledge | Document retrieval | vs user's question | Upload only when reusable |
 
 Coding is the most detailed skill; general stays lean with dual-track `dist/` packages; writing and knowledge stay lean.
@@ -94,7 +94,7 @@ Coding is the most detailed skill; general stays lean with dual-track `dist/` pa
 
 | Scene | session_id |
 |-------|------------|
-| general | Optional; omit for cross-topic prefs; use stable topic name when scoped |
+| general | **Required** — `personal` for global prefs, or stable topic name when scoped |
 | writing | Optional series/doc name (e.g. `blog-2026`) |
 | coding | Required stable repo name (e.g. `timem-mcp`) |
 | rules (timem-rule-learning) | Not used — scope is `user_id` + `agent_id` (stable per role); project via `attributes`/`filters` |

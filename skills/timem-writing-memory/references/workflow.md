@@ -2,7 +2,9 @@
 
 ## Search workflow
 
-1. **Trigger** — need prior style, tone, audience, or series conventions?
+**Default: search** when prior style/audience may help. When unsure → search.
+
+1. **Trigger** — need prior style, tone, audience, or series conventions? OR drafting where those may apply without explicit recall wording? → **search**
 2. **Query** — 3–12 words: style, audience, tone keywords (required).
 3. **Call**:
    ```
@@ -15,7 +17,13 @@
    ```
 4. **Apply** — use verified constraints in the draft; abstain if hits are stale.
 
+**Skip search** only for: one-off grammar/punctuation with no reusable style context.
+
+**Do not under-call** — “I can draft without tools” is not a skip reason when style/audience may matter.
+
 ## Create workflow
+
+Gate hits only when reusable writing rules are confirmed.
 
 1. **Trigger** — user locks in reusable writing rules or preferences?
 2. **Summarize** — style/audience/tone in 1–3 sentences.
@@ -30,6 +38,8 @@
      ],
    )
    ```
+
+More search ≠ more create.
 
 ## session_id guidance
 

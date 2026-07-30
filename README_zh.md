@@ -45,8 +45,8 @@ python /path/to/timem-skill/scripts/install.py --skill coding --target agents
 
 | Skill | 场景 | 安装来源 |
 |-------|------|----------|
-| [timem-coding-memory](skills/timem-coding-memory/) | `coding` | 优先用 **`dist/full/` 或 `dist/standalone/`** |
-| [timem-general-memory](skills/timem-general-memory/) | `general` | 优先用 **`dist/full/` 或 `dist/standalone/`** |
+| [timem-coding-memory](skills/timem-coding-memory/) | `coding` | **优先 `dist/standalone/`**（或 `dist/full/`） |
+| [timem-general-memory](skills/timem-general-memory/) | `general` | **优先 `dist/standalone/`**（或 `dist/full/`） |
 | [timem-writing-memory](skills/timem-writing-memory/) | `writing` | `skills/timem-writing-memory/`（自包含） |
 | [timem-rule-learning](skills/timem-rule-learning/) | 规则（跨场景） | `skills/timem-rule-learning/`（自包含） |
 | [timem-knowledge](skills/timem-knowledge/) | 知识库 | `skills/timem-knowledge/` |

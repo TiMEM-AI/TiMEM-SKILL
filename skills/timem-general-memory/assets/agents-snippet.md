@@ -1,12 +1,14 @@
 ## TiMEM general memory (Skill + MCP)
 
-When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the **timem-general-memory** skill (install from [timem-skill](https://github.com/TiMEM-AI/timem-skill) `dist/full/` or `dist/standalone/`).
+When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the **timem-general-memory** skill (prefer [timem-skill](https://github.com/TiMEM-AI/timem-skill) `dist/standalone/`; `dist/full/` also fine).
 
 ### Per-turn workflow
 
-1. **Prefer search** when prefs/facts/topic context might help (unsure → search); skip only trivia / disposable chit-chat
-2. Verify hits vs current conversation
-3. **Gated create** only on remember / stable cross-session preference or fact (more search ≠ more create)
-4. Coding/writing tasks → use those skills (`domain=coding` / `domain=writing`)
+1. **Default: `search_memories` first** when prefs **or** durable office/topic facts could help — including without 记得/习惯; unsure → search
+2. Skip search only for trivia / disposable mood / process-only narration with no durable conclusion
+3. Do **not** skip search because the turn is “about work not about the person”
+4. Verify hits vs current conversation
+5. **Gated create** only on remember / stable pref·role / confirmed durable work·topic fact (decision, owner, deadline, meeting conclusion). More search ≠ more create. **Not** a daily work log; no auto-create on every finished task
+6. Coding/writing tasks → use those skills (`domain=coding` / `domain=writing`)
 
-Canonical packages: `dist/full/timem-general-memory/` or `dist/standalone/timem-general-memory/`
+Canonical packages: `dist/standalone/timem-general-memory/` (recommended) or `dist/full/timem-general-memory/`

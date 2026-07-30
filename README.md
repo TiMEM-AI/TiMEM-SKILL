@@ -48,8 +48,8 @@ python /path/to/timem-skill/scripts/install.py --skill coding --target agents
 
 | Skill | Scene | Install from |
 |-------|-------|--------------|
-| [timem-coding-memory](skills/timem-coding-memory/) | `coding` | **`dist/full/` or `dist/standalone/`** (prefer these) |
-| [timem-general-memory](skills/timem-general-memory/) | `general` | **`dist/full/` or `dist/standalone/`** (prefer these) |
+| [timem-coding-memory](skills/timem-coding-memory/) | `coding` | **prefer `dist/standalone/`** (or `dist/full/`) |
+| [timem-general-memory](skills/timem-general-memory/) | `general` | **prefer `dist/standalone/`** (or `dist/full/`) |
 | [timem-writing-memory](skills/timem-writing-memory/) | `writing` | `skills/timem-writing-memory/` (self-contained) |
 | [timem-rule-learning](skills/timem-rule-learning/) | rules (cross-scene) | `skills/timem-rule-learning/` (self-contained) |
 | [timem-knowledge](skills/timem-knowledge/) | knowledge | `skills/timem-knowledge/` |
