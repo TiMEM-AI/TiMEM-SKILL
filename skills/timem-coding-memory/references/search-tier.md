@@ -1,61 +1,20 @@
-# Coding Search Tier model
+# Coding Search Tier (simplified)
 
-Classify each user message **before** calling `search_memories`. Decide with the **Must / Should / Skip** table first; map to an `S*` value for the `search_tier` parameter.
+**Default: search on every coding turn.** Call `search_memories` BEFORE exploratory codebase grep/read — even if you could just read the code. Retrieval is cheap; missed context is expensive.
 
-**Default: search (call MCP).** Prefer Must/Should over Skip. When unsure whether memories could help → treat as **Should** (`S3`) and call `search_memories` before exploratory codebase tools. Mid-task follow-ups on the same coding topic still search unless Skip clearly applies. Do **not** under-call: skip MCP solely because grep/read or context might answer is invalid.
+## search_tier
 
-## Primary buckets
-
-| Bucket | When | Map to `search_tier` | Action |
-|--------|------|----------------------|--------|
-| **Must** | Explicit recall; delete lookup; cross-project planning; project module / architecture / design questions | `S0`, `S1`, `S3` (overview), `S6` | **Search**; pass `search_tier` |
-| **Should** | Any project-bound technical turn with known repo (implement, edit, explain, review, refactor, debug, follow-up); repo unclear (clarify first); before arch / cross-module edits; recurring debug | `S2`, `S3` (ongoing), `S4`, `S5` | **Search** (after clarify if `S2`); pass `search_tier` |
-| **Skip** | Typo / single-line format only; unrelated trivia; zero-project syntax | `S-skip` | **Do not search** |
-
-### Skip (narrow only)
-
-Use Skip **only** for:
-
-- Typo or single-line formatting/indent fixes
-- Unrelated chit-chat with no project context
-- Generic syntax with zero project context (e.g. "Python list comprehension syntax")
-
-When in doubt between Should and Skip → **Should** (search).
-
-### Do NOT classify as Skip
-
-- "模块有哪些" / "架构是什么" / project overview → **Must** (`S3`)
-- Implement / edit / explain / review / refactor in a known repo → **Should** (`S3` / `S4`)
-- Technical discussion when `session_id` applies → **Should** or **Must**
-- Historical decisions / lessons → **Must** (`S0`) or **Should** (`S3`)
-- Follow-up turns on an ongoing coding task → **Should** (`S3`) unless the turn is a pure typo/format fix
-
-**Note:** AGENTS.md may hold static conventions — still **search** for historical decisions, lessons, or corrections not fully captured there.
-
-## S* parameter map (pass as `search_tier`)
+`search_tier` is a coding-search parameter that affects empty-result behavior (`elevate_create`). You do **not** need to classify each turn — default to `S3`.
 
 | `search_tier` | When | Call notes |
 |---------------|------|------------|
-| **S0** | User explicitly asks to recall | `limit=10` |
-| **S1** | Cross-project planning | no `session_id`; `limit=10` |
-| **S2** | Project work but **repo unclear** | Clarify repo → then search with `session_id` |
-| **S3** | Project-bound technical work (incl. module/arch overview, implement, edit, explain) | `session_id` + required `query_text` |
-| **S4** | Before architecture / cross-module edits | query expresses intent |
-| **S5** | Debugging recurring symptom | symptom keywords in query |
+| **S3** | Default — any project-bound coding turn with a known repo (implement, edit, explain, review, refactor, debug, module/arch overview, follow-up) | `session_id` + required `query_text` |
+| **S0** | User explicitly asks to recall ("你记得之前怎么定的吗") | `limit=10` |
 | **S6** | Before `delete_memory` | search to obtain `memory_id` |
-| **S-skip** | Narrow fix / trivia only | do not call search |
 
-### Project technical questions (`S3`, bucket Must)
+Everything else → `S3`. When unsure → `S3` and search.
 
-When `session_id` is known, use **Must** / `S3` (not Skip) for:
-
-- Module layout or responsibilities
-- Architecture, layers, or design
-- Project conventions or past technical decisions in this repo
-
-Flow: **search first** (with `search_tier`) → verify vs code/AGENTS.md → then read codebase.
-
-After a code-verified answer with `likely_reuse`, apply write-rubric **`project_discovery`**. See [write-rubric.md](write-rubric.md).
+If the repo is unclear, clarify first, then search with `session_id` and `S3`.
 
 ## Recommended call
 
@@ -63,22 +22,24 @@ After a code-verified answer with `likely_reuse`, apply write-rubric **`project_
 search_memories(
   query_text="<concise technical question>",  # required, 3–12 words
   domain="coding",
-  session_id="<repo-name>",  # omit for S1; required when repo known
-  search_tier="S3",  # required for coding — enables empty-search elevate_create
-  limit=5,  # task-start / ongoing; use 10 for S0 / S1
+  session_id="<repo-name>",
+  search_tier="S3",
+  limit=5,
 )
 ```
 
-## Order rule
+## Skip search (narrow only)
 
-When bucket is not Skip: call `search_memories` **before** exploratory codebase grep/read.
+- Typo or single-line formatting/indent fixes
+- Generic syntax with zero project context (e.g. "Python list comprehension syntax")
+- Unrelated trivia
+- User explicitly said "别搜"
 
-After Skip: proceed directly to codebase work.
+Module/architecture/overview questions are **not** skip — always search those.
 
 ## Empty results
 
 When `count=0` and `domain=coding`, read optional fields: `memory_gap`, `guidance`, `elevate_create`, `suggested_next`.
 
 - Work from codebase; empty search ≠ auto-create.
-- `elevate_create` is a soft signal for gated WRITE EVAL only (needs non-empty `search_tier` + `session_id` from MCP).
-- Verified project orientation with `likely_reuse` → default **create** via `project_discovery` when write gate hits.
+- `elevate_create` is a soft hint, not a command — still apply your own judgment.
