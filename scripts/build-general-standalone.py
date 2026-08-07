@@ -222,8 +222,8 @@ def _condense_workflow_for_standalone(text: str) -> str:
 
 
 def _condense_examples(text: str) -> str:
-    """Keep examples 1–5; drop gate-miss duplicate of anti-patterns."""
-    keep = {1, 2, 3, 4, 5}
+    """Keep all examples."""
+    keep = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
     parts = re.split(r"(?=## Example \d+)", text)
     intro = parts[0] if parts and not parts[0].startswith("## Example") else ""
     kept: list[str] = []
