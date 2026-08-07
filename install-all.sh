@@ -15,7 +15,6 @@
 #
 # 参数:
 #   --api-key KEY       TiMEM API Key (默认读 $TIMEM_API_KEY 环境变量)
-#   --user-id ID        TiMEM 用户 ID (默认: $USER 或 "default")
 #   --skills LIST       只安装指定 skill (逗号分隔，默认全部 5 个)
 #   --local             使用本地 stdio MCP (uvx) 而非 Cloud HTTP
 #   --skip-mcp          跳过 MCP 配置，只装 skills
@@ -87,7 +86,6 @@ AGENT_FILTER=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --api-key)     API_KEY="$2"; shift 2 ;;
-    --user-id)     USER_ID="$2"; shift 2 ;;
     --skills)      SKILLS_FILTER="$2"; shift 2 ;;
     --local)       LOCAL_MODE=true; shift ;;
     --skip-mcp)    SKIP_MCP=true; shift ;;
@@ -100,6 +98,71 @@ while [[ $# -gt 0 ]]; do
     *)             echo "未知参数: $1 (用 --help 查看帮助)" >&2; exit 1 ;;
   esac
 done
+
+# ============================================================================
+# 交互模式检测
+# ============================================================================
+
+# 判断是否在交互式终端中运行
+IS_TTY=false
+if [ -t 0 ] && [ -t 1 ]; then
+  IS_TTY=true
+fi
+
+# 判断是否需要交互式引导:
+#   - --quiet 或 --dry-run → 非交互
+#   - --api-key 给了 → 非交互
+#   - --agent 给了 → 跳过 agent 选择交互
+#   - --skills 给了 → 跳过 skill 选择交互
+#   - 非 TTY → 非交互 (提示下载后执行)
+INTERACTIVE=false
+if [ "$QUIET" = false ] && [ "$DRY_RUN" = false ] && [ "$IS_TTY" = true ]; then
+  INTERACTIVE=true
+fi
+
+# 如果非 TTY 且非 quiet 且非 dry-run，提示用户下载后执行
+if [ "$IS_TTY" = false ] && [ "$QUIET" = false ] && [ "$DRY_RUN" = false ]; then
+  # 检查是否通过管道运行 (stdin 不是终端)
+  if [ ! -t 0 ]; then
+    echo "检测到非交互环境 (管道/重定向)。"
+    echo ""
+    echo "本脚本支持交互式引导安装，但在管道中无法交互。"
+    echo "建议先下载到本地再执行:"
+    echo ""
+    echo "  curl -fsSL https://raw.githubusercontent.com/AIGility-Cloud-Innovation/aici-cc-plugin/main/install-all.sh -o install-all.sh"
+    echo "  bash install-all.sh"
+    echo ""
+    echo "或使用非交互参数直接安装:"
+    echo "  curl -fsSL .../install-all.sh | bash -s -- --api-key YOUR_KEY"
+    echo ""
+    # 自动下载到临时文件并执行
+    echo "是否自动下载到临时文件并以交互模式执行? (y/n)"
+    read -r _auto_dl 2>/dev/null || _auto_dl="n"
+    if [ "$_auto_dl" = "y" ] || [ "$_auto_dl" = "Y" ]; then
+      _tmp_script="$(mktemp /tmp/aici-install-all.XXXXXX.sh)"
+      # 从管道读取剩余内容写入临时文件
+      cat > "$_tmp_script"
+      if [ -s "$_tmp_script" ]; then
+        exec bash "$_tmp_script" "$@"
+      fi
+    fi
+    echo "继续以非交互模式安装..."
+    INTERACTIVE=false
+  fi
+fi
+
+# 语言: zh / en
+LANG_SEL="zh"
+
+# i18n 文本函数
+# 用法: t "中文" "English"
+t() {
+  if [ "$LANG_SEL" = "zh" ]; then
+    echo "$1"
+  else
+    echo "$2"
+  fi
+}
 
 # ============================================================================
 # 日志函数
@@ -540,6 +603,262 @@ install_claude_desktop() {
 }
 
 # ============================================================================
+# 交互式引导函数
+# ============================================================================
+
+# --- 1. 语言选择 ---
+interactive_select_language() {
+  echo ""
+  echo "请选择语言 / Select language:"
+  echo "  1) 中文"
+  echo "  2) English"
+  echo -n "> "
+  read -r lang_choice
+  case "$lang_choice" in
+    1|zh|中文) LANG_SEL="zh" ;;
+    2|en|English) LANG_SEL="en" ;;
+    *) LANG_SEL="zh" ;;
+  esac
+}
+
+# --- 2. Agent 选择 ---
+interactive_select_agents() {
+  # 如果 --agent 已指定，跳过
+  if [ -n "$AGENT_FILTER" ]; then
+    return 0
+  fi
+
+  echo ""
+  echo "$(t "检测到以下已安装的 Agent CLI:" "Detected installed Agent CLIs:")"
+  echo ""
+
+  declare -a detected_names detected_dirs
+  local idx=1
+
+  for agent_line in "${AGENTS[@]}"; do
+    IFS='|' read -r name detect_cmd config_dir _ _ _ _ _ <<< "$agent_line"
+    if detect_agent "$detect_cmd" "$config_dir"; then
+      detected_names+=("$name")
+      detected_dirs+=("$config_dir")
+      printf "  [%d] %-14s (%s)\n" "$idx" "$name" "$config_dir"
+      idx=$((idx + 1))
+    fi
+  done
+
+  # 检测 Claude Desktop
+  local desktop_config
+  desktop_config="$(detect_claude_desktop 2>/dev/null || true)"
+  if [ -n "$desktop_config" ]; then
+    detected_names+=("claude-desktop")
+    detected_dirs+=("$desktop_config")
+    printf "  [%d] %-14s (%s)\n" "$idx" "claude-desktop" "$desktop_config"
+    idx=$((idx + 1))
+  fi
+
+  local total_detected=${#detected_names[@]}
+
+  if [ "$total_detected" -eq 0 ]; then
+    echo "$(t "  未检测到任何已安装的 Agent CLI" "  No installed Agent CLI detected")"
+    echo "$(t "  支持的 agent: ${AGENTS[*]%%|*}" "  Supported: ${AGENTS[*]%%|*}")"
+    return 0
+  fi
+
+  echo ""
+  echo "$(t "选择安装目标:" "Select installation target:")"
+  echo "  a) $(t "全部安装" "Install all")"
+  echo "  s) $(t "选择部分安装 (输入编号，逗号分隔)" "Select specific (enter numbers, comma-separated)")"
+  echo "  q) $(t "退出" "Quit")"
+  echo -n "> "
+  read -r agent_choice
+
+  case "$agent_choice" in
+    a|A|"")
+      # 全部安装 — 不设置 AGENT_FILTER (默认行为)
+      AGENT_FILTER=""
+      ;;
+    q|Q)
+      echo "$(t "已取消安装。" "Installation cancelled.")"
+      exit 0
+      ;;
+    s|S|*)
+      # 解析编号，构建 AGENT_FILTER
+      local selected=""
+      IFS=',' read -ra nums <<< "$agent_choice"
+      for num in "${nums[@]}"; do
+        num=$(echo "$num" | tr -d ' ')
+        if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "$total_detected" ]; then
+          if [ -n "$selected" ]; then
+            selected="$selected,"
+          fi
+          selected="$selected${detected_names[$((num - 1))]}"
+        else
+          warn "$(t "忽略无效编号: $num" "Ignoring invalid number: $num")"
+        fi
+      done
+      if [ -n "$selected" ]; then
+        AGENT_FILTER="$selected"
+      else
+        echo "$(t "未选择任何 agent，将安装全部。" "No agent selected, installing all.")"
+      fi
+      ;;
+  esac
+}
+
+# --- 3. API Key 输入 ---
+interactive_input_apikey() {
+  # 如果 --api-key 已指定或环境变量已设置，跳过
+  if [ -n "$API_KEY" ]; then
+    return 0
+  fi
+
+  echo ""
+  echo "$(t "请输入 TiMEM API Key (可在 space.timem.cloud 获取):" "Enter TiMEM API Key (get it from space.timem.cloud):")"
+
+  # 尝试密码模式 (不回显)
+  local key=""
+  if [ -t 0 ]; then
+    read -rs -p "> " key
+    echo ""
+  else
+    read -r key
+  fi
+
+  if [ -n "$key" ]; then
+    API_KEY="$key"
+  else
+    warn "$(t "未输入 API Key，MCP 配置将使用占位符。" "No API Key entered, MCP config will use placeholder.")"
+  fi
+}
+
+# --- 4. Skill 选择 ---
+interactive_select_skills() {
+  # 如果 --skills 已指定，跳过
+  if [ -n "$SKILLS_FILTER" ]; then
+    return 0
+  fi
+
+  echo ""
+  echo "$(t "选择要安装的 Skills:" "Select Skills to install:")"
+  echo ""
+
+  local idx=1
+  declare -a skill_names
+  for skill_entry in "${ALL_SKILLS[@]}"; do
+    IFS=':' read -r skill_name _ <<< "$skill_entry"
+    skill_names+=("$skill_name")
+    local desc=""
+    case "$skill_name" in
+      timem-coding-memory)  desc="$(t "编程记忆" "Coding memory")" ;;
+      timem-general-memory) desc="$(t "通用记忆" "General memory")" ;;
+      timem-writing-memory) desc="$(t "写作记忆" "Writing memory")" ;;
+      timem-rule-learning)  desc="$(t "规则学习" "Rule learning")" ;;
+      timem-knowledge)      desc="$(t "知识库" "Knowledge base")" ;;
+    esac
+    printf "  [%d] %s (%s)\n" "$idx" "$skill_name" "$desc"
+    idx=$((idx + 1))
+  done
+
+  echo ""
+  echo "  a) $(t "全部安装 (推荐)" "Install all (recommended)")"
+  echo "  s) $(t "选择部分安装 (输入编号，逗号分隔)" "Select specific (enter numbers, comma-separated)")"
+  echo -n "> "
+  read -r skill_choice
+
+  case "$skill_choice" in
+    a|A|"")
+      # 全部安装 — 不设置 SKILLS_FILTER
+      SKILLS_FILTER=""
+      ;;
+    s|S|*)
+      local selected=""
+      IFS=',' read -ra nums <<< "$skill_choice"
+      for num in "${nums[@]}"; do
+        num=$(echo "$num" | tr -d ' ')
+        if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "${#skill_names[@]}" ]; then
+          if [ -n "$selected" ]; then
+            selected="$selected,"
+          fi
+          selected="$selected${skill_names[$((num - 1))]}"
+        else
+          warn "$(t "忽略无效编号: $num" "Ignoring invalid number: $num")"
+        fi
+      done
+      if [ -n "$selected" ]; then
+        SKILLS_FILTER="$selected"
+      else
+        echo "$(t "未选择任何 skill，将安装全部。" "No skill selected, installing all.")"
+      fi
+      ;;
+  esac
+}
+
+# --- 5. 确认 ---
+interactive_confirm() {
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "$(t "安装摘要:" "Installation Summary:")"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # Agent
+  local agent_display
+  if [ -n "$AGENT_FILTER" ]; then
+    agent_display="$AGENT_FILTER"
+  else
+    agent_display="$(t "全部 (已检测的)" "All (detected)")"
+  fi
+  printf "  %-12s %s\n" "$(t "Agent:" "Agent:")" "$agent_display"
+
+  # Skills
+  local skill_display
+  if [ -n "$SKILLS_FILTER" ]; then
+    skill_display="$SKILLS_FILTER"
+  else
+    local skill_count=${#ALL_SKILLS[@]}
+    skill_display="$(t "全部 (${skill_count}个)" "All (${skill_count})")"
+  fi
+  printf "  %-12s %s\n" "$(t "Skills:" "Skills:")" "$skill_display"
+
+  # MCP 模式
+  local mcp_mode
+  if [ "$SKIP_MCP" = true ]; then
+    mcp_mode="$(t "跳过" "Skipped")"
+  elif [ "$LOCAL_MODE" = true ]; then
+    mcp_mode="$(t "本地 stdio (uvx)" "Local stdio (uvx)")"
+  else
+    mcp_mode="Cloud HTTP"
+  fi
+  printf "  %-12s %s\n" "$(t "MCP 模式:" "MCP Mode:")" "$mcp_mode"
+
+  # API Key (掩码显示)
+  local key_display
+  if [ -n "$API_KEY" ]; then
+    local key_len=${#API_KEY}
+    if [ "$key_len" -le 8 ]; then
+      key_display="***"
+    else
+      key_display="${API_KEY:0:4}...${API_KEY: -4}"
+    fi
+  else
+    key_display="$(t "未设置" "Not set")"
+  fi
+  printf "  %-12s %s\n" "API Key:" "$key_display"
+
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo -n "$(t "确认安装? (y/n) " "Confirm installation? (y/n) ")"
+  read -r confirm
+  case "$confirm" in
+    y|Y|yes|YES)
+      return 0
+      ;;
+    *)
+      echo "$(t "已取消安装。" "Installation cancelled.")"
+      exit 0
+      ;;
+  esac
+}
+
+# ============================================================================
 # 主流程
 # ============================================================================
 
@@ -549,10 +868,27 @@ echo "║  为所有已检测的 AI Agent CLI 安装 TiMEM Skills + MCP 配置  
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
+# --- 交互式引导 ---
+if [ "$INTERACTIVE" = true ]; then
+  # 1. 语言选择
+  interactive_select_language
+
+  # 2. API Key 输入 (在 agent 检测之前，因为不依赖检测结果)
+  interactive_input_apikey
+
+  # 3. Agent 选择
+  interactive_select_agents
+
+  # 4. Skill 选择
+  interactive_select_skills
+
+  # 5. 确认
+  interactive_confirm
+fi
+
 # 显示配置
 info "MCP 模式: $([ "$LOCAL_MODE" = true ] && echo '本地 stdio (uvx)' || echo 'Cloud HTTP (零安装)')"
 info "API Key: $([ -n "$API_KEY" ] && echo '已设置' || echo '未设置 (用 --api-key 或 \$TIMEM_API_KEY)')"
-info "User ID: $USER_ID"
 info "Dry-run: $DRY_RUN"
 [ -n "$SKILLS_FILTER" ] && info "Skills 过滤: $SKILLS_FILTER"
 [ -n "$AGENT_FILTER" ]  && info "Agent 过滤: $AGENT_FILTER"
