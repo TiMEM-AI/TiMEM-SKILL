@@ -17,7 +17,7 @@ Semantic search over stored memories.
 | `query_text` | **Yes** | 3–12 task-oriented words; empty query causes API error |
 | `domain` | Recommended | `general` / `coding` / `writing` → filters expert space |
 | `session_id` | Scene-dependent | See each skill; stable name, not random UUID per turn. General: always pass `personal` or topic. |
-| `search_tier` | Coding: **strongly recommended** | `S0`–`S6` / `S-skip` from timem-coding-memory Search Tier; enables empty-search `elevate_create` |
+| `search_tier` | Coding: recommended | `S3` by default; `S0` for explicit recall, `S6` before delete; enables empty-search `elevate_create` |
 | `limit` | No | Default 10; use 5 for task-start, 10 for explicit recall |
 
 Example:
