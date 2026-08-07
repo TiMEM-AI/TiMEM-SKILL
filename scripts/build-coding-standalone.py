@@ -37,9 +37,8 @@ LINK_TARGET_TO_SECTION = {
     "assets/agents-snippet.md": "dist/full/timem-coding-memory/assets/agents-snippet.md",
 }
 
-# Keep high-signal examples: remember, closure, Must recall, empty-gap.
-# Drop ongoing-task / gate-miss / duplicate orientation (anti-patterns + ex.4).
-KEEP_EXAMPLE_ORIG_NUMS = {2, 3, 4, 5}
+# Keep all examples (source is already condensed).
+KEEP_EXAMPLE_ORIG_NUMS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 
 def _strip_md_title(text: str) -> str:
@@ -182,99 +181,12 @@ def _collapse_extra_rules(text: str) -> str:
 
 
 def _condense_search_tier_for_standalone(text: str) -> str:
-    """Keep Must/Should/Skip + S* map + call + empty; drop duplicate prose."""
-    # Drop verbose Skip / Do NOT subsections (covered by primary table + SKILL anti-patterns).
-    text = re.sub(
-        r"\n### Skip \(narrow only\).*?(?=\n## |\n### |\Z)",
-        "\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    text = re.sub(
-        r"\n### Do NOT classify as Skip.*?(?=\n## |\n### |\Z)",
-        "\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    text = re.sub(
-        r"\n\*\*Note:\*\* AGENTS\.md.*?\n",
-        "\n",
-        text,
-        count=1,
-    )
-    # Collapse project technical subsection into one line after S* table.
-    text = re.sub(
-        r"\n### Project technical questions.*?(?=\n## |\n### |\Z)",
-        "\n\n`S3` overview/module/arch questions are **Must** (not Skip); "
-        "implement/edit/explain/follow-up → **Should**/`S3`. "
-        "When unsure → search. Flow: search first → verify → then read code; "
-        "then `project_discovery` write gate.\n\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    # Order rule duplicates SKILL checklist.
-    text = re.sub(
-        r"\n## Order rule.*?(?=\n## |\Z)",
-        "\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
+    """Source is already condensed; just collapse extra rules."""
     return _collapse_extra_rules(text)
 
 
 def _condense_write_rubric_for_standalone(text: str) -> str:
-    """Keep gates + required rubric + noise + budget; drop duplicate tables."""
-    text = re.sub(
-        r"\n## `memory_hint` checklist.*?(?=\n## |\Z)",
-        "\n\n`memory_hint`: decision|constraint|lesson|convention|preference|correction "
-        "(agent typing hint; MCP may not persist to Engine).\n\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    text = re.sub(
-        r"\n## Rubric — advisory.*?(?=\n## |\Z)",
-        "\n\nAdvisory: `bounded_content`, `freshness_ok`, `non_duplicate`.\n\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    text = re.sub(
-        r"\n## NOT valid skip reasons.*?(?=\n## |\Z)",
-        "\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    text = re.sub(
-        r"\n## Recommended call.*?(?=\n## |\Z)",
-        "\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    text = re.sub(
-        r"\n## Priority \(when choosing memory_hint\).*?(?=\n## |\Z)",
-        "\n\nHint priority: constraint > decision > convention > preference > lesson.\n\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    # Shorten project_discovery prose.
-    text = re.sub(
-        r"\n## `project_discovery` \(default create when gated\).*?(?=\n## |\Z)",
-        "\n\n## `project_discovery`\n\n"
-        "For Must/`S3` module/arch answers: verify from code; if search empty/incomplete "
-        "→ default `create_memory` (`memory_hint=convention`, ≤10 bullets). "
-        "Skip if highly similar complete entry exists.\n\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
+    """Source is already condensed; just collapse extra rules."""
     return _collapse_extra_rules(text)
 
 
