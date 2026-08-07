@@ -12,37 +12,24 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 ## Search
 
-**Default: search.** Call `search_memories` when prior prefs or durable facts might help. When unsure → search.
+**Default: search on every turn.** Call `search_memories` BEFORE answering — even if the user did not say remember/记得. Retrieval is cheap; missed context is expensive.
 
-1. **Trigger** — explicit recall; OR prefs/habits/role/topic/office facts might matter; OR personalized or office task (write/arrange/explain/纪要/汇报/排期) without recall wording; OR ongoing personal/project follow-up; OR unsure → **search**
-2. **Query** — 3–12 words (required).
-3. **Call** `search_memories(query_text=..., domain="general", session_id="personal"|<topic>, limit=5)`
-4. **Verify** — skip stale or contradictory hits.
+1. `search_memories(query_text=<3–12 words>, domain="general", session_id="personal"|<topic>, limit=5)`
+2. Verify hits against the current conversation; abstain if stale or contradictory.
 
-**Skip search** only for: pure trivia (e.g. "今天星期几"); one-off mood / disposable chit-chat; process-only narration with no durable conclusion.
+**Skip search** only for: pure trivia (e.g. "今天星期几"); user explicitly said "别搜"; a previous call this turn already returned what you need.
 
-**Do not under-call** — “I can answer directly” or “this is work not about the person” is not a skip reason.
+**Do not under-call** — "I can answer directly" or "this is work not about the person" is not a skip reason.
 
-## Create (gated)
+## Create
 
-Gate hits only:
+**Default: create after answering.** The server extracts facts and dedups against history, so passing the raw turns is enough.
 
-| Gate | Example |
-|------|---------|
-| User says remember / save | "请记住：解释用中文" |
-| Stable preference confirmed | "以后尽量简洁" |
-| Stable role / background | "我是后端，主要写 Python" |
-| **Durable work/topic fact confirmed** | "对接人固定小王" / "方案定了走 A" / "周五前交评审" |
+- `create_memory(domain="general", session_id="personal"|<topic>, messages=[2–4 recent turns])`
 
-Then: `create_memory(domain="general", session_id="personal"|<topic>, messages=2–4 turns)`.
+**Skip create** only for: pure mood / disposable chit-chat with no durable content ("今天有点累"); process-only narration with no conclusion; nothing new vs. what you just searched; user said not to store.
 
-Max **0–5** per task. No gate → no create, no skip monologue. **No** coding-style closure auto-create on every finished task.
-
-More search ≠ more create.
-
-## Noise floor
-
-One-off chit-chat, temporary mood, unverified guesses, long dumps, episodic work log ("今天改了三页 PPT"), transient state ("正在改第 3 页"), coding/writing content.
+More search ≠ more create judgment for you — the gate is only the narrow list above.
 
 ## session_id
 
