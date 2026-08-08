@@ -1,16 +1,16 @@
 #!/bin/bash
 #
-# AICI CC Plugin - 一键安装到所有已检测的 AI Agent CLI
+# TiMEM Skill - 一键安装到所有已检测的 AI Agent 工具
 #
 # 功能:
-#   - 自动检测已安装的 agent CLI (Claude Code, Codex, Cursor, OpenClaw, Hermes,
+#   - 自动检测已安装的 Agent 工具 (Claude Code, Codex, Cursor, OpenClaw, Hermes,
 #     Trae, CodeBuddy, Qoder, Claude Desktop)
 #   - 为每个 agent 安装 TiMEM Skills (5 个) + 合并 TiMEM MCP 配置
 #   - 幂等: 重复安装安全，已有配置不覆盖，同名 skill 先 .bak 备份
 #   - 部分 agent 失败不影响其他，最后汇总
 #
 # 用法:
-#   curl -fsSL https://raw.githubusercontent.com/AIGility-Cloud-Innovation/aici-cc-plugin/main/install-all.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.sh | bash
 #   bash install-all.sh [OPTIONS]
 #
 # 参数:
@@ -82,6 +82,7 @@ FORCE=false
 QUIET=false
 DRY_RUN=false
 AGENT_FILTER=""
+SILENT_MODE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -129,7 +130,7 @@ if [ "$IS_TTY" = false ] && [ "$QUIET" = false ] && [ "$DRY_RUN" = false ]; then
     echo "本脚本支持交互式引导安装，但在管道中无法交互。"
     echo "建议先下载到本地再执行:"
     echo ""
-    echo "  curl -fsSL https://raw.githubusercontent.com/AIGility-Cloud-Innovation/aici-cc-plugin/main/install-all.sh -o install-all.sh"
+    echo "  curl -fsSL https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.sh -o install-all.sh"
     echo "  bash install-all.sh"
     echo ""
     echo "或使用非交互参数直接安装:"
@@ -139,7 +140,7 @@ if [ "$IS_TTY" = false ] && [ "$QUIET" = false ] && [ "$DRY_RUN" = false ]; then
     echo "是否自动下载到临时文件并以交互模式执行? (y/n)"
     read -r _auto_dl 2>/dev/null || _auto_dl="n"
     if [ "$_auto_dl" = "y" ] || [ "$_auto_dl" = "Y" ]; then
-      _tmp_script="$(mktemp /tmp/aici-install-all.XXXXXX.sh)"
+      _tmp_script="$(mktemp /tmp/timem-install-all.XXXXXX.sh)"
       # 从管道读取剩余内容写入临时文件
       cat > "$_tmp_script"
       if [ -s "$_tmp_script" ]; then
@@ -195,7 +196,7 @@ record_result() {
 # 临时目录
 # ============================================================================
 
-TMPDIR_WORK="$(mktemp -d /tmp/aici-install-all.XXXXXX)"
+TMPDIR_WORK="$(mktemp -d /tmp/timem-install-all.XXXXXX)"
 trap 'rm -rf "$TMPDIR_WORK"' EXIT
 
 # ============================================================================
@@ -612,11 +613,16 @@ interactive_select_language() {
   echo "请选择语言 / Select language:"
   echo "  1) 中文"
   echo "  2) English"
+  echo "  3) $(t "静默安装（一键全装）" "Silent install (all defaults)")"
   echo -n "> "
   read -r lang_choice
   case "$lang_choice" in
     1|zh|中文) LANG_SEL="zh" ;;
     2|en|English) LANG_SEL="en" ;;
+    3|silent|静默)
+      LANG_SEL="zh"
+      SILENT_MODE=true
+      ;;
     *) LANG_SEL="zh" ;;
   esac
 }
@@ -629,7 +635,7 @@ interactive_select_agents() {
   fi
 
   echo ""
-  echo "$(t "检测到以下已安装的 Agent CLI:" "Detected installed Agent CLIs:")"
+  echo "$(t "检测到以下已安装的 Agent 工具:" "Detected installed Agent tools:")"
   echo ""
 
   declare -a detected_names detected_dirs
@@ -658,7 +664,7 @@ interactive_select_agents() {
   local total_detected=${#detected_names[@]}
 
   if [ "$total_detected" -eq 0 ]; then
-    echo "$(t "  未检测到任何已安装的 Agent CLI" "  No installed Agent CLI detected")"
+    echo "$(t "  未检测到任何已安装的 Agent 工具" "  No installed Agent tools detected")"
     echo "$(t "  支持的 agent: ${AGENTS[*]%%|*}" "  Supported: ${AGENTS[*]%%|*}")"
     return 0
   fi
@@ -666,26 +672,25 @@ interactive_select_agents() {
   echo ""
   echo "$(t "选择安装目标:" "Select installation target:")"
   echo "  a) $(t "全部安装" "Install all")"
-  echo "  s) $(t "选择部分安装 (输入编号，逗号分隔)" "Select specific (enter numbers, comma-separated)")"
+  echo "  s) $(t "选择部分安装" "Select specific")"
   echo "  q) $(t "退出" "Quit")"
   echo -n "> "
   read -r agent_choice
 
   case "$agent_choice" in
     a|A|"")
-      # 全部安装 — 不设置 AGENT_FILTER (默认行为)
       AGENT_FILTER=""
       ;;
     q|Q)
       echo "$(t "已取消安装。" "Installation cancelled.")"
       exit 0
       ;;
-    s|S|*)
-      # 解析编号，构建 AGENT_FILTER
+    s|S)
+      echo "$(t "请输入要安装的编号，用空格分隔 (如: 1 3 5):" "Enter numbers, space-separated (e.g: 1 3 5):")"
+      echo -n "> "
+      read -r agent_nums
       local selected=""
-      IFS=',' read -ra nums <<< "$agent_choice"
-      for num in "${nums[@]}"; do
-        num=$(echo "$num" | tr -d ' ')
+      for num in $agent_nums; do
         if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "$total_detected" ]; then
           if [ -n "$selected" ]; then
             selected="$selected,"
@@ -700,6 +705,10 @@ interactive_select_agents() {
       else
         echo "$(t "未选择任何 agent，将安装全部。" "No agent selected, installing all.")"
       fi
+      ;;
+    *)
+      warn "$(t "无效选项: $agent_choice" "Invalid choice: $agent_choice")"
+      AGENT_FILTER=""
       ;;
   esac
 }
@@ -760,20 +769,20 @@ interactive_select_skills() {
 
   echo ""
   echo "  a) $(t "全部安装 (推荐)" "Install all (recommended)")"
-  echo "  s) $(t "选择部分安装 (输入编号，逗号分隔)" "Select specific (enter numbers, comma-separated)")"
+  echo "  s) $(t "选择部分安装" "Select specific")"
   echo -n "> "
   read -r skill_choice
 
   case "$skill_choice" in
     a|A|"")
-      # 全部安装 — 不设置 SKILLS_FILTER
       SKILLS_FILTER=""
       ;;
-    s|S|*)
+    s|S)
+      echo "$(t "请输入要安装的编号，用空格分隔 (如: 1 3 5):" "Enter numbers, space-separated (e.g: 1 3 5):")"
+      echo -n "> "
+      read -r skill_nums
       local selected=""
-      IFS=',' read -ra nums <<< "$skill_choice"
-      for num in "${nums[@]}"; do
-        num=$(echo "$num" | tr -d ' ')
+      for num in $skill_nums; do
         if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "${#skill_names[@]}" ]; then
           if [ -n "$selected" ]; then
             selected="$selected,"
@@ -788,6 +797,10 @@ interactive_select_skills() {
       else
         echo "$(t "未选择任何 skill，将安装全部。" "No skill selected, installing all.")"
       fi
+      ;;
+    *)
+      warn "$(t "无效选项: $skill_choice" "Invalid choice: $skill_choice")"
+      SKILLS_FILTER=""
       ;;
   esac
 }
@@ -863,8 +876,8 @@ interactive_confirm() {
 # ============================================================================
 
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  AICI CC Plugin - TiMEM 一键安装 (install-all.sh)            ║"
-echo "║  为所有已检测的 AI Agent CLI 安装 TiMEM Skills + MCP 配置     ║"
+echo "║  TiMEM Skill 一键安装 (install-all.sh)                        ║"
+echo "║  为所有已检测的 Agent 工具安装 TiMEM Skills + MCP 配置         ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -873,17 +886,23 @@ if [ "$INTERACTIVE" = true ]; then
   # 1. 语言选择
   interactive_select_language
 
-  # 2. API Key 输入 (在 agent 检测之前，因为不依赖检测结果)
-  interactive_input_apikey
+  # 静默模式：只输入 API Key，然后一键全装
+  if [ "$SILENT_MODE" = true ]; then
+    interactive_input_apikey
+    echo "$(t "静默安装：将为所有已检测的 Agent 工具安装全部 Skills + MCP" "Silent install: all skills + MCP for all detected agents")"
+  else
+    # 2. API Key 输入
+    interactive_input_apikey
 
-  # 3. Agent 选择
-  interactive_select_agents
+    # 3. Agent 选择
+    interactive_select_agents
 
-  # 4. Skill 选择
-  interactive_select_skills
+    # 4. Skill 选择
+    interactive_select_skills
 
-  # 5. 确认
-  interactive_confirm
+    # 5. 确认
+    interactive_confirm
+  fi
 fi
 
 # 显示配置
@@ -951,7 +970,7 @@ if [ $RESULT_FAIL -gt 0 ]; then
 fi
 
 if [ $RESULT_OK -eq 0 ]; then
-  echo "  ℹ️  没有检测到任何已安装的 agent CLI"
+  echo "  ℹ️  没有检测到任何已安装的 Agent 工具"
   echo "  支持的 agent: claude-code, codex, cursor, openclaw, hermes, trae, codebuddy, qoder, claude-desktop"
   exit 0
 fi
@@ -960,7 +979,7 @@ echo "  ✅ 所有检测到的 agent 均已安装完成"
 echo ""
 echo "  下一步:"
 echo "    1. 配置环境变量 TIMEM_API_KEY (如尚未配置)"
-echo "    2. 重启对应的 agent CLI"
+echo "    2. 重启对应的 Agent 工具"
 echo ""
 
 if [ "$LOCAL_MODE" = false ]; then
