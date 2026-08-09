@@ -4,18 +4,10 @@
 .DESCRIPTION
   为所有已检测的 Agent 工具安装 TiMEM Skills + MCP 配置
 .USAGE
-  powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1 | iex"
+  $env:TIMEM_API_KEY = "tmk_xxx"; irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1 | iex
 #>
 
 $ErrorActionPreference = "Stop"
-
-# ============================================================================
-# 参数
-# ============================================================================
-param(
-  [string]$ApiKey = ""
-)
-if ($ApiKey) { $script:API_KEY = $ApiKey }
 
 # ============================================================================
 # 常量
@@ -44,7 +36,7 @@ $AGENTS = @(
 # Claude Desktop
 $CLAUDE_DESKTOP_CONFIG = "$env:APPDATA\Claude\claude_desktop_config.json"
 
-#$API_KEY = $env:TIMEM_API_KEY
+$API_KEY = $env:TIMEM_API_KEY
 $SILENT_MODE = $false
 $AGENT_FILTER = ""
 $SKILLS_FILTER = ""
