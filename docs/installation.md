@@ -4,7 +4,7 @@ Install [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) first, then install o
 
 ## Prerequisites
 
-- TiMEM MCP configured (`TiMEM_API_KEY`, `TiMEM_USER_ID`)
+- TiMEM MCP configured (`TiMEM_API_KEY`)
 - An Agent Skills–compatible client (Cursor, Claude Code, Codex, etc.)
 
 ## What to install

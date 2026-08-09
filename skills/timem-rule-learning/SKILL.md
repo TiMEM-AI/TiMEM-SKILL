@@ -24,7 +24,7 @@ skills (`create_memory`), not here.
 | Field | Value |
 |-------|-------|
 | `agent_id` | **One stable id per agent role** (e.g. `coder`, `reviewer`); default `default`. Never random per turn or session |
-| `user_id` | Omit — resolved from `TiMEM_USER_ID` |
+| `user_id` | Omit — resolved from API Key |
 | Project scope | Not `session_id`: learn with `attributes={"project": "<repo>"}`, recall with `filters` (+ `include_missing_filter_keys`) — see [workflow.md](references/workflow.md) |
 | Structured arguments | Pass `attributes` / `filters` as native objects and tag collections as native arrays. Never JSON-stringify or double-encode them |
 

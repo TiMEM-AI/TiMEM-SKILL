@@ -60,7 +60,7 @@ Source of truth for development lives under `skills/`. User-facing coding and ge
 
 ## Prerequisites
 
-1. Configure [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) in your MCP client (`TiMEM_API_KEY`, `TiMEM_USER_ID`).
+1. Configure [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) in your MCP client (`TiMEM_API_KEY`).
 2. Install the skill package(s) you need (see above and [docs/installation.md](docs/installation.md)).
 
 ## Architecture

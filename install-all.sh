@@ -73,7 +73,6 @@ CLAUDE_DESKTOP_CONFIGS=(
 # ============================================================================
 
 API_KEY="${TIMEM_API_KEY:-}"
-USER_ID="${USER:-default}"
 SKILLS_FILTER=""
 LOCAL_MODE=false
 SKIP_MCP=false
@@ -321,11 +320,11 @@ install_skills_for_agent() {
 generate_mcp_server_json() {
   local agent_name="$1"
   if [ "$LOCAL_MODE" = true ]; then
-    printf '{"type":"stdio","command":"uvx","args":["--from","git+%s.git@main","timem-mcp"],"env":{"TIMEM_API_KEY":"%s","TIMEM_API_HOST":"%s","TIMEM_USER_ID":"%s","TIMEM_AGENT_ID":"%s"}}' \
-      "$TIMEM_MCP_REPO" "$API_KEY" "$TIMEM_API_HOST_DEFAULT" "$USER_ID" "$agent_name"
+    printf '{"type":"stdio","command":"uvx","args":["--from","git+%s.git@main","timem-mcp"],"env":{"TIMEM_API_KEY":"%s","TIMEM_API_HOST":"%s","TIMEM_AGENT_ID":"%s"}}' \
+      "$TIMEM_MCP_REPO" "$API_KEY" "$TIMEM_API_HOST_DEFAULT" "$agent_name"
   else
-    printf '{"type":"http","url":"%s","headers":{"X-API-Key":"%s","X-TiMEM-User-Id":"%s","X-TiMEM-Agent-Id":"%s"}}' \
-      "$TIMEM_CLOUD_URL" "$API_KEY" "$USER_ID" "$agent_name"
+    printf '{"type":"http","url":"%s","headers":{"X-API-Key":"%s","X-TiMEM-Agent-Id":"%s"}}' \
+      "$TIMEM_CLOUD_URL" "$API_KEY" "$agent_name"
   fi
 }
 
@@ -439,7 +438,6 @@ args = ["--from", "git+${TIMEM_MCP_REPO}.git@main", "timem-mcp"]
 [mcp_servers.${server_name}.env]
 TIMEM_API_KEY = "${API_KEY}"
 TIMEM_API_HOST = "${TIMEM_API_HOST_DEFAULT}"
-TIMEM_USER_ID = "${USER_ID}"
 TIMEM_AGENT_ID = "${agent_name}"
 TOMLEOF
   success "MCP 配置已追加: $config_file"
@@ -487,7 +485,6 @@ mcp_servers:
     env:
       TIMEM_API_KEY: "${API_KEY}"
       TIMEM_API_HOST: "${TIMEM_API_HOST_DEFAULT}"
-      TIMEM_USER_ID: "${USER_ID}"
       TIMEM_AGENT_ID: "${agent_name}"
 YAMLEOF
   else
@@ -498,8 +495,7 @@ mcp_servers:
     type: http
     url: "${TIMEM_CLOUD_URL}"
     headers:
-      Authorization: "Bearer ${API_KEY}"
-      X-TiMEM-User-Id: "${USER_ID}"
+      X-API-Key: "${API_KEY}"
       X-TiMEM-Agent-Id: "${agent_name}"
 YAMLEOF
   fi

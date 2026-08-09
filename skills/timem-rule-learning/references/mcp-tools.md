@@ -4,7 +4,7 @@ Full parameter reference for the 8 public rule-learning tools exposed by
 [timem-mcp](https://github.com/TiMEM-AI/timem-mcp). This file is **self-contained**
 — unlike the memory skills, `timem-rule-learning` does not depend on `skills/shared`.
 
-All tools scope by **`user_id` + `agent_id`**: omit `user_id` (resolved from `TiMEM_USER_ID`);
+All tools scope by **`user_id` + `agent_id`**: omit `user_id` (resolved from API Key);
 pass one stable `agent_id` per agent role (default `"default"`). Backend: `/api/v1/rules/*`.
 
 Core loop tools (`learn_rule`, `recall_rules`, `record_rule_outcome`, `update_rule`) may take

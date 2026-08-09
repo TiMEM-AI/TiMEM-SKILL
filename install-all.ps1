@@ -10,6 +10,14 @@
 $ErrorActionPreference = "Stop"
 
 # ============================================================================
+# 参数
+# ============================================================================
+param(
+  [string]$ApiKey = ""
+)
+if ($ApiKey) { $script:API_KEY = $ApiKey }
+
+# ============================================================================
 # 常量
 # ============================================================================
 $TIMEM_SKILL_REPO = "https://github.com/TiMEM-AI/TiMEM-SKILL"
@@ -37,7 +45,6 @@ $AGENTS = @(
 $CLAUDE_DESKTOP_CONFIG = "$env:APPDATA\Claude\claude_desktop_config.json"
 
 #$API_KEY = $env:TIMEM_API_KEY
-$USER_ID = $env:USERNAME
 $SILENT_MODE = $false
 $AGENT_FILTER = ""
 $SKILLS_FILTER = ""
@@ -126,7 +133,6 @@ function Merge-McpJson($configFile, $agentName, $rootKey) {
     url = $TIMEM_CLOUD_URL
     headers = @{
       "X-API-Key" = $API_KEY
-      "X-TiMEM-User-Id" = $USER_ID
       "X-TiMEM-Agent-Id" = $agentName
     }
   }
@@ -166,7 +172,6 @@ args = ["--from", "git+$TIMEM_MCP_REPO.git@main", "timem-mcp"]
 [mcp_servers.$serverName.env]
 TIMEM_API_KEY = "$API_KEY"
 TIMEM_API_HOST = "$TIMEM_API_HOST_DEFAULT"
-TIMEM_USER_ID = "$USER_ID"
 TIMEM_AGENT_ID = "$agentName"
 "@
   New-Item -ItemType Directory -Path (Split-Path $configFile) -Force | Out-Null
@@ -187,7 +192,6 @@ mcp_servers:
     url: "$TIMEM_CLOUD_URL"
     headers:
       X-API-Key: "$API_KEY"
-      X-TiMEM-User-Id: "$USER_ID"
       X-TiMEM-Agent-Id: "$agentName"
 "@
   New-Item -ItemType Directory -Path (Split-Path $configFile) -Force | Out-Null

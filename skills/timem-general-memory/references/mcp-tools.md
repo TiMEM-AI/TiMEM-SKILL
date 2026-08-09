@@ -119,7 +119,7 @@ List all knowledge bases for the current user.
 
 | Parameter | Required | Notes |
 |-----------|----------|-------|
-| `user_id` | No | Overrides env default |
+| `user_id` | No | Omit — resolved from API Key |
 
 Returns `knowledge_bases[]` with `id`, `name`, `description`, `is_default`, `file_count`, `created_at`.
 
@@ -133,7 +133,7 @@ Semantic search within a knowledge base (BM25 hybrid retrieval with keyword boos
 |-----------|----------|-------|
 | `query` | **Yes** | Natural language question |
 | `kb_id` | No | Omit to use default KB |
-| `user_id` | No | Overrides env default |
+| `user_id` | No | Omit — resolved from API Key |
 
 Example:
 ```
@@ -151,7 +151,7 @@ Upload a document to a knowledge base. Processing is async — returns immediate
 | `file_content` | **Yes** | Base64-encoded file bytes |
 | `filename` | **Yes** | Original filename with extension |
 | `kb_id` | No | Omit to use default KB |
-| `user_id` | No | Overrides env default |
+| `user_id` | No | Omit — resolved from API Key |
 
 Example:
 ```
