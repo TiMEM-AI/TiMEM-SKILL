@@ -37,8 +37,8 @@ set -uo pipefail
 
 TIMEM_SKILL_REPO="https://github.com/TiMEM-AI/TiMEM-SKILL"
 TIMEM_MCP_REPO="https://github.com/TiMEM-AI/timem-mcp"
-TIMEM_CLOUD_URL="https://api.timem.cloud/mcp"
-TIMEM_API_HOST_DEFAULT="https://api.timem.cloud"
+TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp"
+TIMEM_API_HOST_DEFAULT="https://api.space.timem.cloud"
 
 # 5 个 TiMEM skills: name:repo_relative_path
 ALL_SKILLS=(
@@ -324,7 +324,7 @@ generate_mcp_server_json() {
     printf '{"type":"stdio","command":"uvx","args":["--from","git+%s.git@main","timem-mcp"],"env":{"TIMEM_API_KEY":"%s","TIMEM_API_HOST":"%s","TIMEM_USER_ID":"%s","TIMEM_AGENT_ID":"%s"}}' \
       "$TIMEM_MCP_REPO" "$API_KEY" "$TIMEM_API_HOST_DEFAULT" "$USER_ID" "$agent_name"
   else
-    printf '{"type":"http","url":"%s","headers":{"Authorization":"Bearer %s","X-TiMEM-User-Id":"%s","X-TiMEM-Agent-Id":"%s"}}' \
+    printf '{"type":"http","url":"%s","headers":{"X-API-Key":"%s","X-TiMEM-User-Id":"%s","X-TiMEM-Agent-Id":"%s"}}' \
       "$TIMEM_CLOUD_URL" "$API_KEY" "$USER_ID" "$agent_name"
   fi
 }
