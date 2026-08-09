@@ -38,7 +38,7 @@ $CLAUDE_DESKTOP_CONFIG = "$env:APPDATA\Claude\claude_desktop_config.json"
 
 $API_KEY = $env:TIMEM_API_KEY
 $SILENT_MODE = $false
-$AGENT_FILTER = ""
+$AGENT_FILTER = $env:TIMEM_AGENT
 $SKILLS_FILTER = ""
 
 # ============================================================================
