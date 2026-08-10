@@ -4,7 +4,7 @@
 #
 # 功能:
 #   - 自动检测已安装的 Agent 工具 (Claude Code, Codex, Cursor, OpenClaw, Hermes,
-#     Trae, CodeBuddy, Qoder, Claude Desktop)
+#     Trae, WorkBuddy, Qoder, Claude Desktop)
 #   - 为每个 agent 安装 TiMEM Skills (5 个) + 合并 TiMEM MCP 配置
 #   - 幂等: 重复安装安全，已有配置不覆盖，同名 skill 先 .bak 备份
 #   - 部分 agent 失败不影响其他，最后汇总
@@ -56,7 +56,7 @@ AGENTS=(
   "openclaw|openclaw|$HOME/.openclaw|$HOME/.openclaw/skills|$HOME/.openclaw/openclaw.json|json|mcp.servers|yes"
   "hermes|hermes|$HOME/.hermes|$HOME/.hermes/skills|$HOME/.hermes/config.yaml|yaml|mcp_servers|yes"
   "trae|trae|$HOME/.trae|$HOME/.trae/skills|$HOME/.trae/mcp.json|json|mcpServers|yes"
-  "codebuddy|codebuddy|$HOME/.codebuddy|$HOME/.codebuddy/skills|$HOME/.codebuddy/.mcp.json|json|mcpServers|yes"
+  "workbuddy|workbuddy|$HOME/.workbuddy|$HOME/.workbuddy/skills|$HOME/.workbuddy/.mcp.json|json|mcpServers|yes"
   "qoder|qoder|$HOME/.qoder|$HOME/.qoder/skills|$HOME/.qoder/mcp.json|json|mcpServers|yes"
 )
 
@@ -963,7 +963,7 @@ fi
 
 if [ $RESULT_OK -eq 0 ]; then
   echo "  ℹ️  没有检测到任何已安装的 Agent 工具"
-  echo "  支持的 agent: claude-code, codex, cursor, openclaw, hermes, trae, codebuddy, qoder, claude-desktop"
+  echo "  支持的 agent: claude-code, codex, cursor, openclaw, hermes, trae, workbuddy, qoder, claude-desktop"
   exit 0
 fi
 

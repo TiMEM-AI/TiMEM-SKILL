@@ -30,6 +30,7 @@ $AGENTS = @(
   @{name="openclaw"; detect="openclaw"; configDir="$env:USERPROFILE\.openclaw"; skillsDir="$env:USERPROFILE\.openclaw\skills"; configFile="$env:USERPROFILE\.openclaw\openclaw.json"; format="json"; rootKey="mcp.servers"; hasSkills=$true}
   @{name="hermes"; detect="hermes"; configDir="$env:USERPROFILE\.hermes"; skillsDir="$env:USERPROFILE\.hermes\skills"; configFile="$env:USERPROFILE\.hermes\config.yaml"; format="yaml"; rootKey="mcp_servers"; hasSkills=$true}
   @{name="trae"; detect="trae"; configDir="$env:USERPROFILE\.trae"; skillsDir="$env:USERPROFILE\.trae\skills"; configFile="$env:USERPROFILE\.trae\mcp.json"; format="json"; rootKey="mcpServers"; hasSkills=$true}
+  @{name="workbuddy"; detect="workbuddy"; configDir="$env:USERPROFILE\.workbuddy"; skillsDir="$env:USERPROFILE\.workbuddy\skills"; configFile="$env:USERPROFILE\.workbuddy\.mcp.json"; format="json"; rootKey="mcpServers"; hasSkills=$true}
 )
 
 # Claude Desktop
