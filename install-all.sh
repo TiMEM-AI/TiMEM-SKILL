@@ -322,8 +322,8 @@ generate_mcp_server_json() {
     printf '{"type":"stdio","command":"uvx","args":["--from","git+%s.git@main","timem-mcp"],"env":{"TIMEM_API_KEY":"%s","TIMEM_API_HOST":"%s","TIMEM_AGENT_ID":"%s"}}' \
       "$TIMEM_MCP_REPO" "$API_KEY" "$TIMEM_API_HOST_DEFAULT" "$agent_name"
   else
-    printf '{"type":"http","url":"%s","headers":{"X-API-Key":"%s","X-TiMEM-Agent-Id":"%s"}}' \
-      "$TIMEM_CLOUD_URL" "$API_KEY" "$agent_name"
+    printf '{"type":"http","url":"%s","headers":{"X-API-Key":"%s"}}' \
+      "$TIMEM_CLOUD_URL" "$API_KEY"
   fi
 }
 
@@ -495,7 +495,6 @@ mcp_servers:
     url: "${TIMEM_CLOUD_URL}"
     headers:
       X-API-Key: "${API_KEY}"
-      X-TiMEM-Agent-Id: "${agent_name}"
 YAMLEOF
   fi
   success "MCP 配置已追加: $config_file"
@@ -755,8 +754,6 @@ interactive_select_skills() {
       timem-coding-memory)  desc="$(t "编程记忆" "Coding memory")" ;;
       timem-general-memory) desc="$(t "通用记忆" "General memory")" ;;
       timem-writing-memory) desc="$(t "写作记忆" "Writing memory")" ;;
-      timem-rule-learning)  desc="$(t "规则学习" "Rule learning")" ;;
-      timem-knowledge)      desc="$(t "知识库" "Knowledge base")" ;;
     esac
     printf "  [%d] %s (%s)\n" "$idx" "$skill_name" "$desc"
     idx=$((idx + 1))

@@ -124,7 +124,6 @@ function Merge-McpJson($configFile, $agentName, $rootKey) {
     url = $TIMEM_CLOUD_URL
     headers = @{
       "X-API-Key" = $API_KEY
-      "X-TiMEM-Agent-Id" = $agentName
     }
   }
 
@@ -183,7 +182,6 @@ mcp_servers:
     url: "$TIMEM_CLOUD_URL"
     headers:
       X-API-Key: "$API_KEY"
-      X-TiMEM-Agent-Id: "$agentName"
 "@
   New-Item -ItemType Directory -Path (Split-Path $configFile) -Force | Out-Null
   Add-Content -Path $configFile -Value $yamlContent -Encoding UTF8
