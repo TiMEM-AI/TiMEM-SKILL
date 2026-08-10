@@ -37,16 +37,15 @@ set -uo pipefail
 
 TIMEM_SKILL_REPO="https://github.com/TiMEM-AI/TiMEM-SKILL"
 TIMEM_MCP_REPO="https://github.com/TiMEM-AI/timem-mcp"
-TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp"
+TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp/"
+TIMEM_SERVER_NAME="TiMEM-SPACE"
 TIMEM_API_HOST_DEFAULT="https://api.space.timem.cloud"
 
-# 5 个 TiMEM skills: name:repo_relative_path
+# 3 个 TiMEM skills (TiMEM-SPACE MCP 仅支持记忆工具): name:repo_relative_path
 ALL_SKILLS=(
   "timem-coding-memory:dist/standalone/timem-coding-memory"
   "timem-general-memory:dist/standalone/timem-general-memory"
   "timem-writing-memory:skills/timem-writing-memory"
-  "timem-rule-learning:skills/timem-rule-learning"
-  "timem-knowledge:skills/timem-knowledge"
 )
 
 # Agent 矩阵: name|detect_cmd|config_dir|skills_dir|mcp_config|format|root_key|has_skills
@@ -334,7 +333,7 @@ generate_mcp_server_json() {
 
 merge_mcp_json() {
   local config_file="$1" agent_name="$2" root_key="$3"
-  local server_name="TiMEM-MCP"
+  local server_name="${TIMEM_SERVER_NAME}"
   local server_config
   server_config="$(generate_mcp_server_json "$agent_name")"
 
@@ -407,7 +406,7 @@ PYEOF
 
 merge_mcp_toml() {
   local config_file="$1" agent_name="$2"
-  local server_name="TiMEM-MCP"
+  local server_name="${TIMEM_SERVER_NAME}"
 
   if [ "$DRY_RUN" = true ]; then
     dryrun "合并 MCP -> $config_file (TOML)"
@@ -450,7 +449,7 @@ TOMLEOF
 
 merge_mcp_yaml() {
   local config_file="$1" agent_name="$2"
-  local server_name="TiMEM-MCP"
+  local server_name="${TIMEM_SERVER_NAME}"
 
   if [ "$DRY_RUN" = true ]; then
     dryrun "合并 MCP -> $config_file (YAML)"

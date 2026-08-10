@@ -13,14 +13,13 @@ $ErrorActionPreference = "Stop"
 # 常量
 # ============================================================================
 $TIMEM_SKILL_REPO = "https://github.com/TiMEM-AI/TiMEM-SKILL"
-$TIMEM_CLOUD_URL = "https://api.space.timem.cloud/mcp"
+$TIMEM_CLOUD_URL = "https://api.space.timem.cloud/mcp/"
+$TIMEM_SERVER_NAME = "TiMEM-SPACE"
 
 $ALL_SKILLS = @(
   @{name="timem-coding-memory"; path="dist/standalone/timem-coding-memory"}
   @{name="timem-general-memory"; path="dist/standalone/timem-general-memory"}
   @{name="timem-writing-memory"; path="skills/timem-writing-memory"}
-  @{name="timem-rule-learning"; path="skills/timem-rule-learning"}
-  @{name="timem-knowledge"; path="skills/timem-knowledge"}
 )
 
 # Agent 矩阵
@@ -119,7 +118,7 @@ function Install-Skills($agent, $skillDir) {
 # MCP 配置 (JSON)
 # ============================================================================
 function Merge-McpJson($configFile, $agentName, $rootKey) {
-  $serverName = "TiMEM-MCP"
+  $serverName = $TIMEM_SERVER_NAME
   $serverConfig = @{
     type = "http"
     url = $TIMEM_CLOUD_URL
@@ -154,7 +153,7 @@ function Merge-McpJson($configFile, $agentName, $rootKey) {
 # MCP 配置 (TOML - Codex)
 # ============================================================================
 function Merge-McpToml($configFile, $agentName) {
-  $serverName = "TiMEM-MCP"
+  $serverName = $TIMEM_SERVER_NAME
   $tomlContent = @"
 
 [mcp_servers.$serverName]
@@ -175,7 +174,7 @@ TIMEM_AGENT_ID = "$agentName"
 # MCP 配置 (YAML - Hermes)
 # ============================================================================
 function Merge-McpYaml($configFile, $agentName) {
-  $serverName = "TiMEM-MCP"
+  $serverName = $TIMEM_SERVER_NAME
   $yamlContent = @"
 
 mcp_servers:
