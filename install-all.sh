@@ -16,7 +16,6 @@
 # 参数:
 #   --api-key KEY       TiMEM API Key (默认读 $TIMEM_API_KEY 环境变量)
 #   --skills LIST       只安装指定 skill (逗号分隔，默认全部 5 个)
-#   --local             使用本地 stdio MCP (uvx) 而非 Cloud HTTP
 #   --skip-mcp          跳过 MCP 配置，只装 skills
 #   --skip-skills       跳过 skills，只配 MCP
 #   --force             强制覆盖已有配置 (不用 .bak)
@@ -27,7 +26,6 @@
 #
 # MCP 配置方式:
 #   默认 (Cloud HTTP):  "url": "https://api.timem.cloud/mcp" + headers (零安装)
-#   --local (stdio):    uvx --from git+https://github.com/TiMEM-AI/timem-mcp@main timem-mcp
 
 set -uo pipefail
 
@@ -73,7 +71,6 @@ CLAUDE_DESKTOP_CONFIGS=(
 
 API_KEY="${TIMEM_API_KEY:-}"
 SKILLS_FILTER=""
-LOCAL_MODE=false
 SKIP_MCP=false
 SKIP_SKILLS=false
 FORCE=false
@@ -86,7 +83,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --api-key)     API_KEY="$2"; shift 2 ;;
     --skills)      SKILLS_FILTER="$2"; shift 2 ;;
-    --local)       LOCAL_MODE=true; shift ;;
     --skip-mcp)    SKIP_MCP=true; shift ;;
     --skip-skills) SKIP_SKILLS=true; shift ;;
     --force)       FORCE=true; shift ;;
@@ -318,13 +314,8 @@ install_skills_for_agent() {
 
 generate_mcp_server_json() {
   local agent_name="$1"
-  if [ "$LOCAL_MODE" = true ]; then
-    printf '{"type":"stdio","command":"uvx","args":["--from","git+%s.git@main","timem-mcp"],"env":{"TIMEM_API_KEY":"%s","TIMEM_API_HOST":"%s","TIMEM_AGENT_ID":"%s"}}' \
-      "$TIMEM_MCP_REPO" "$API_KEY" "$TIMEM_API_HOST_DEFAULT" "$agent_name"
-  else
-    printf '{"type":"http","url":"%s","headers":{"X-API-Key":"%s"}}' \
-      "$TIMEM_CLOUD_URL" "$API_KEY"
-  fi
+  printf '{"url":"%s","headers":{"X-API-Key":"%s"}}' \
+    "$TIMEM_CLOUD_URL" "$API_KEY"
 }
 
 # ============================================================================
@@ -470,33 +461,14 @@ merge_mcp_yaml() {
 
   [ -f "$config_file" ] && [ "$FORCE" = false ] && cp "$config_file" "$config_file.bak" 2>/dev/null || true
 
-  if [ "$LOCAL_MODE" = true ]; then
-    cat >> "$config_file" <<YAMLEOF
+  cat >> "$config_file" <<YAMLEOF
 
 mcp_servers:
   ${server_name}:
-    type: stdio
-    command: uvx
-    args:
-      - "--from"
-      - "git+${TIMEM_MCP_REPO}.git@main"
-      - "timem-mcp"
-    env:
-      TIMEM_API_KEY: "${API_KEY}"
-      TIMEM_API_HOST: "${TIMEM_API_HOST_DEFAULT}"
-      TIMEM_AGENT_ID: "${agent_name}"
-YAMLEOF
-  else
-    cat >> "$config_file" <<YAMLEOF
-
-mcp_servers:
-  ${server_name}:
-    type: http
     url: "${TIMEM_CLOUD_URL}"
     headers:
-      X-API-Key: "${API_KEY}"
+      X-API-Key: ***
 YAMLEOF
-  fi
   success "MCP 配置已追加: $config_file"
   return 0
 }
@@ -827,8 +799,6 @@ interactive_confirm() {
   local mcp_mode
   if [ "$SKIP_MCP" = true ]; then
     mcp_mode="$(t "跳过" "Skipped")"
-  elif [ "$LOCAL_MODE" = true ]; then
-    mcp_mode="$(t "本地 stdio (uvx)" "Local stdio (uvx)")"
   else
     mcp_mode="Cloud HTTP"
   fi
@@ -898,7 +868,7 @@ if [ "$INTERACTIVE" = true ]; then
 fi
 
 # 显示配置
-info "MCP 模式: $([ "$LOCAL_MODE" = true ] && echo '本地 stdio (uvx)' || echo 'Cloud HTTP (零安装)')"
+info "MCP 模式: Cloud HTTP (零安装)"
 info "API Key: $([ -n "$API_KEY" ] && echo '已设置' || echo '未设置 (用 --api-key 或 \$TIMEM_API_KEY)')"
 info "Dry-run: $DRY_RUN"
 [ -n "$SKILLS_FILTER" ] && info "Skills 过滤: $SKILLS_FILTER"
@@ -974,8 +944,5 @@ echo "    1. 配置环境变量 TIMEM_API_KEY (如尚未配置)"
 echo "    2. 重启对应的 Agent 工具"
 echo ""
 
-if [ "$LOCAL_MODE" = false ]; then
-  echo "  提示: 当前使用 Cloud HTTP 模式 (零安装)"
-  echo "  如需本地 stdio 模式: bash install-all.sh --local"
-  echo ""
-fi
+echo "  提示: 当前使用 Cloud HTTP 模式 (零安装)"
+echo ""
