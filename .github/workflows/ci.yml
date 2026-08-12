@@ -1,0 +1,106 @@
+name: Build & Upload Skill Packages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - skills/**
+  workflow_dispatch:
+
+concurrency:
+  group: skill-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    env:
+      TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+      TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+      TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+      SKILL_COS_PREFIX: timem/skills/standalone
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install cos-python-sdk-v5
+
+      - name: Build skill packages
+        run: |
+          python scripts/build-all.py
+          for skill_dir in dist/standalone/*/; do
+            if [ ! -f "${skill_dir}SKILL.md" ]; then
+              echo "ERROR: ${skill_dir}SKILL.md not found"
+              exit 1
+            fi
+            echo "OK: ${skill_dir}SKILL.md"
+          done
+
+      - name: Package & upload to COS
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TENCENT_SECRET_ID:-}" ] || [ -z "${TENCENT_SECRET_KEY:-}" ] || [ -z "${TENCENT_COS_BUCKET:-}" ] || [ -z "${TENCENT_COS_REGION:-}" ]; then
+            echo "WARNING: Tencent COS credentials not configured, skipping upload."
+            exit 0
+          fi
+
+          for skill_dir in dist/standalone/*/; do
+            if [ ! -f "${skill_dir}SKILL.md" ]; then
+              continue
+            fi
+
+            skill_id=$(basename "${skill_dir}")
+            zip_path="dist/standalone/${skill_id}.zip"
+
+            (cd dist/standalone && zip -r "${skill_id}.zip" "${skill_id}")
+            unzip -l "${zip_path}" | grep -q "${skill_id}/SKILL.md" || { echo "ERROR: ${skill_id}/SKILL.md not found in ZIP"; exit 1; }
+
+            cos_key="${SKILL_COS_PREFIX}/${skill_id}/${skill_id}.zip"
+            python3 <<EOF
+          import os
+          from qcloud_cos import CosConfig, CosS3Client
+
+          config = CosConfig(
+              Region=os.environ["TENCENT_COS_REGION"],
+              SecretId=os.environ["TENCENT_SECRET_ID"],
+              SecretKey=os.environ["TENCENT_SECRET_KEY"],
+              Scheme="https",
+          )
+          client = CosS3Client(config)
+
+          bucket = os.environ["TENCENT_COS_BUCKET"]
+          key = "${cos_key}"
+          local_path = "${zip_path}"
+
+          client.upload_file(Bucket=bucket, Key=key, LocalFilePath=local_path, EnableMD5=True)
+          client.put_object_acl(Bucket=bucket, Key=key, ACL="public-read")
+          print(f"Uploaded {local_path} to cos://{bucket}/{key}")
+          EOF
+
+            echo "Download URL: https://${TENCENT_COS_BUCKET}.cos.${TENCENT_COS_REGION}.myqcloud.com/${cos_key}"
+          done
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Built Skill Packages"
+            echo ""
+            if ls dist/standalone/*/SKILL.md >/dev/null 2>&1; then
+              for skill_dir in dist/standalone/*/; do
+                skill_id=$(basename "${skill_dir}")
+                echo "- \`${skill_id}\`"
+              done
+            else
+              echo "_No skill packages built._"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
