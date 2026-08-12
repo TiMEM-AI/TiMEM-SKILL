@@ -5,6 +5,30 @@
 **语言：** [English](README.md) | 简体中文
 
 遵循 [Agent Skills](https://agentskills.io/specification) 开放标准，可在 Cursor、Claude Code、Codex 等兼容客户端使用。
+## 快速安装（ZIP 包）
+
+下载最新 release ZIP——无需 git clone：
+
+| | |
+|---|---|
+| **下载** | [timem-skill-latest.zip](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip) |
+| **历史版本** | [releases/](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/) |
+
+```bash
+# 1. 下载
+curl -fsSL 'https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
+
+# 2. 解压
+unzip timem-skill.zip
+
+# 3. 安装（自动检测 Claude Code、Codex、Cursor、Hermes 等）
+cd timem-skill && bash install-all.sh --api-key 你的_TIMEM_API_KEY
+```
+
+> **Windows (PowerShell)：** 下载解压后运行 `.\install-all.ps1 -ApiKey 你的_TIMEM_API_KEY`
+
+**自行构建 ZIP：** `bash scripts/build-release.sh` → `bash scripts/upload-cos.sh`
+
 
 ## 推荐（写代码）
 

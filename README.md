@@ -6,6 +6,30 @@ Agent Skills for [TiMEM](https://timem.cloud) memory workflows. Skills orchestra
 
 Skills follow the [Agent Skills](https://agentskills.io/specification) open standard (portable across Cursor, Claude Code, Codex, and other compatible agents).
 
+## Quick Install (ZIP Package)
+
+Download the latest release ZIP — no git clone needed:
+
+| | |
+|---|---|
+| **Download** | [timem-skill-latest.zip](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip) |
+| **Version** | [releases/](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/) |
+
+```bash
+# 1. Download
+curl -fsSL 'https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
+
+# 2. Unzip
+unzip timem-skill.zip
+
+# 3. Install (auto-detects Claude Code, Codex, Cursor, Hermes, etc.)
+cd timem-skill && bash install-all.sh --api-key YOUR_TIMEM_API_KEY
+```
+
+> **Windows (PowerShell):** Download and unzip, then run `.\install-all.ps1 -ApiKey YOUR_TIMEM_API_KEY`
+
+**Build your own ZIP:** `bash scripts/build-release.sh` → `bash scripts/upload-cos.sh`
+
 ## Recommended (coding)
 
 If TiMEM MCP is already connected and you write code, install **one** coding package:
