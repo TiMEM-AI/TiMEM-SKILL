@@ -13,7 +13,9 @@ $ErrorActionPreference = "Stop"
 # 常量
 # ============================================================================
 $TIMEM_SKILL_REPO = "https://github.com/TiMEM-AI/TiMEM-SKILL"
+$TIMEM_MCP_REPO = "https://github.com/TiMEM-AI/timem-mcp"
 $TIMEM_CLOUD_URL = "https://api.space.timem.cloud/mcp/"
+$TIMEM_API_HOST_DEFAULT = "https://api.space.timem.cloud"
 $TIMEM_SERVER_NAME = "TiMEM-SPACE"
 
 $ALL_SKILLS = @(
@@ -178,7 +180,7 @@ function Merge-McpYaml($configFile, $agentName) {
   $yamlContent = @"
 
 mcp_servers:
-  $serverName:
+  ${serverName}:
     type: http
     url: "$TIMEM_CLOUD_URL"
     headers:
@@ -275,7 +277,8 @@ function Confirm-Install {
   Write-Host "安装摘要:"
   Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   Write-Host "  Agent:  $(if ($AGENT_FILTER) {$AGENT_FILTER} else {'全部 (已检测的)'})"
-  Write-Host "  Skills: $(if ($SKILLS_FILTER) {$SKILLS_FILTER} else {"全部 ($($ALL_SKILLS.Count)个)"})"
+  $skillSummary = if ($SKILLS_FILTER) { $SKILLS_FILTER } else { "全部 ($($ALL_SKILLS.Count)个)" }
+  Write-Host "  Skills: $skillSummary"
   Write-Host "  MCP:    Cloud HTTP"
   $keyDisplay = if ($API_KEY) { "$($API_KEY.Substring(0,4))...$($API_KEY.Substring($API_KEY.Length-4))" } else { "未设置" }
   Write-Host "  API Key: $keyDisplay"
