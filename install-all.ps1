@@ -51,6 +51,86 @@ function Success($msg) { Write-Host "  [OK] $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "  [WARN] $msg" -ForegroundColor Yellow }
 function Err($msg) { Write-Host "  [FAIL] $msg" -ForegroundColor Red }
 
+function Write-Utf8NoBom($path, [string]$content) {
+  New-Item -ItemType Directory -Path (Split-Path $path) -Force | Out-Null
+  $encoding = New-Object System.Text.UTF8Encoding($false)
+  [IO.File]::WriteAllText($path, $content, $encoding)
+}
+
+function Remove-TomlTables($content, $tableName) {
+  if ([string]::IsNullOrEmpty($content)) { return "" }
+
+  $keptLines = New-Object System.Collections.Generic.List[string]
+  $skipping = $false
+  foreach ($line in ($content -split "`r?`n")) {
+    if ($line -match '^\s*\[([^\]]+)\]\s*(?:#.*)?$') {
+      $header = $Matches[1].Trim()
+      $skipping = $header -eq $tableName -or $header.StartsWith("$tableName.")
+    }
+    if (-not $skipping) { [void]$keptLines.Add($line) }
+  }
+
+  return ($keptLines -join [Environment]::NewLine).TrimEnd()
+}
+
+function ConvertTo-Hashtable($value) {
+  if ($null -eq $value) { return $null }
+
+  if ($value -is [System.Collections.IDictionary]) {
+    $table = @{}
+    foreach ($key in $value.Keys) {
+      $table[$key] = ConvertTo-Hashtable $value[$key]
+    }
+    return $table
+  }
+
+  if ($value -is [pscustomobject]) {
+    $table = @{}
+    foreach ($property in $value.PSObject.Properties) {
+      $table[$property.Name] = ConvertTo-Hashtable $property.Value
+    }
+    return $table
+  }
+
+  if ($value -is [System.Collections.IEnumerable] -and -not ($value -is [string])) {
+    return @($value | ForEach-Object { ConvertTo-Hashtable $_ })
+  }
+
+  return $value
+}
+
+function Get-YamlTopLevelBlockEnd($lines, $startIndex) {
+  for ($index = $startIndex + 1; $index -lt $lines.Count; $index++) {
+    $line = $lines[$index]
+    if ($line -match '^\S' -and $line -notmatch '^#') { return $index }
+  }
+  return $lines.Count
+}
+
+function Remove-DuplicateYamlMcpRoots($lines) {
+  $keptLines = New-Object System.Collections.Generic.List[string]
+  $seenRoot = $false
+  $skippingRoot = $false
+
+  foreach ($line in $lines) {
+    if ($skippingRoot -and $line -match '^\S' -and $line -notmatch '^#') {
+      $skippingRoot = $false
+    }
+
+    if (-not $skippingRoot -and $line -match '^mcp_servers:\s*(?:#.*)?$') {
+      if ($seenRoot) {
+        $skippingRoot = $true
+        continue
+      }
+      $seenRoot = $true
+    }
+
+    if (-not $skippingRoot) { [void]$keptLines.Add($line) }
+  }
+
+  return @($keptLines)
+}
+
 # ============================================================================
 # Agent 检测
 # ============================================================================
@@ -123,7 +203,6 @@ function Install-Skills($agent, $skillDir) {
 function Merge-McpJson($configFile, $agentName, $rootKey) {
   $serverName = $TIMEM_SERVER_NAME
   $serverConfig = @{
-    type = "http"
     url = $TIMEM_CLOUD_URL
     headers = @{
       "X-API-Key" = $API_KEY
@@ -132,22 +211,44 @@ function Merge-McpJson($configFile, $agentName, $rootKey) {
 
   $config = @{}
   if (Test-Path $configFile) {
-    $config = Get-Content $configFile -Raw | ConvertFrom-Json -AsHashtable
+    $rawConfig = [IO.File]::ReadAllText($configFile)
+    if (-not [string]::IsNullOrWhiteSpace($rawConfig)) {
+      $config = ConvertTo-Hashtable (ConvertFrom-Json -InputObject $rawConfig)
+    }
+  }
+  if (-not ($config -is [System.Collections.IDictionary])) {
+    throw "MCP JSON 根节点必须是对象: $configFile"
   }
 
   # 确保 rootKey 路径存在
-  $keys = $rootKey -split '\.'
+  $keys = @($rootKey -split '\.')
   $d = $config
-  foreach ($k in $keys[0..($keys.Length-2)]) {
-    if (-not $d.ContainsKey($k)) { $d[$k] = @{} }
-    $d = $d[$k]
+  if ($keys.Length -gt 1) {
+    foreach ($k in $keys[0..($keys.Length-2)]) {
+      if (-not $d.ContainsKey($k)) { $d[$k] = @{} }
+      elseif (-not ($d[$k] -is [System.Collections.IDictionary])) {
+        throw "MCP JSON 路径 '$k' 不是对象: $configFile"
+      }
+      $d = $d[$k]
+    }
   }
   $lastKey = $keys[-1]
   if (-not $d.ContainsKey($lastKey)) { $d[$lastKey] = @{} }
-  $d[$lastKey][$serverName] = $serverConfig
+  elseif (-not ($d[$lastKey] -is [System.Collections.IDictionary])) {
+    throw "MCP JSON 路径 '$lastKey' 不是对象: $configFile"
+  }
+  $servers = $d[$lastKey]
 
-  New-Item -ItemType Directory -Path (Split-Path $configFile) -Force | Out-Null
-  $config | ConvertTo-Json -Depth 10 | Set-Content $configFile -Encoding UTF8
+  # 修复旧版本在单层 rootKey 下错误嵌套出的 mcpServers.mcpServers.<server>。
+  if ($keys.Length -eq 1 -and $servers.ContainsKey($lastKey) -and
+      ($servers[$lastKey] -is [System.Collections.IDictionary]) -and
+      $servers[$lastKey].ContainsKey($serverName)) {
+    $servers.Remove($lastKey)
+  }
+  $servers[$serverName] = $serverConfig
+
+  $jsonContent = $config | ConvertTo-Json -Depth 10
+  Write-Utf8NoBom $configFile $jsonContent
   Success "MCP 配置已写入: $configFile"
 }
 
@@ -167,9 +268,11 @@ TIMEM_API_KEY = "$API_KEY"
 TIMEM_API_HOST = "$TIMEM_API_HOST_DEFAULT"
 TIMEM_AGENT_ID = "$agentName"
 "@
-  New-Item -ItemType Directory -Path (Split-Path $configFile) -Force | Out-Null
-  Add-Content -Path $configFile -Value $tomlContent -Encoding UTF8
-  Success "MCP 配置已追加: $configFile"
+  $existingContent = if (Test-Path $configFile) { [IO.File]::ReadAllText($configFile) } else { "" }
+  $existingContent = Remove-TomlTables $existingContent "mcp_servers.$serverName"
+  $separator = if ($existingContent -and -not $existingContent.EndsWith("`n")) { [Environment]::NewLine } else { "" }
+  Write-Utf8NoBom $configFile ($existingContent + $separator + $tomlContent)
+  Success "MCP 配置已写入: $configFile"
 }
 
 # ============================================================================
@@ -177,18 +280,84 @@ TIMEM_AGENT_ID = "$agentName"
 # ============================================================================
 function Merge-McpYaml($configFile, $agentName) {
   $serverName = $TIMEM_SERVER_NAME
-  $yamlContent = @"
+  $serverLines = @(
+    "  ${serverName}:",
+    "    url: `"$TIMEM_CLOUD_URL`"",
+    "    headers:",
+    "      X-API-Key: `"$API_KEY`""
+  )
+  $existingContent = if (Test-Path $configFile) { [IO.File]::ReadAllText($configFile) } else { "" }
+  $lines = Remove-DuplicateYamlMcpRoots @($existingContent -split "`r?`n")
+  $mcpRootIndex = -1
+  for ($index = 0; $index -lt $lines.Count; $index++) {
+    if ($lines[$index] -match '^mcp_servers:\s*(?:#.*)?$') {
+      $mcpRootIndex = $index
+      break
+    }
+  }
 
-mcp_servers:
-  ${serverName}:
-    type: http
-    url: "$TIMEM_CLOUD_URL"
-    headers:
-      X-API-Key: "$API_KEY"
-"@
-  New-Item -ItemType Directory -Path (Split-Path $configFile) -Force | Out-Null
-  Add-Content -Path $configFile -Value $yamlContent -Encoding UTF8
-  Success "MCP 配置已追加: $configFile"
+  if ($mcpRootIndex -lt 0) {
+    $prefix = $existingContent.TrimEnd()
+    if ($prefix) { $prefix += [Environment]::NewLine + [Environment]::NewLine }
+    $yamlContent = $prefix + "mcp_servers:" + [Environment]::NewLine + ($serverLines -join [Environment]::NewLine) + [Environment]::NewLine
+    Write-Utf8NoBom $configFile $yamlContent
+    Success "MCP 配置已写入: $configFile"
+    return
+  }
+
+  $mcpBlockEnd = Get-YamlTopLevelBlockEnd $lines $mcpRootIndex
+  $serverPattern = '^(?<indent> +)' + [regex]::Escape($serverName) + ':\s*(?:#.*)?$'
+  $serverStart = -1
+  $serverIndent = 0
+  for ($index = $mcpRootIndex + 1; $index -lt $mcpBlockEnd; $index++) {
+    $match = [regex]::Match($lines[$index], $serverPattern)
+    if ($match.Success) {
+      $serverStart = $index
+      $serverIndent = $match.Groups['indent'].Value.Length
+      break
+    }
+  }
+
+  if ($serverStart -ge 0) {
+    $serverEnd = $mcpBlockEnd
+    for ($index = $serverStart + 1; $index -lt $mcpBlockEnd; $index++) {
+      $line = $lines[$index]
+      if ($line -match '^\s*#') { continue }
+      $indentMatch = [regex]::Match($line, '^(?<indent> *)\S')
+      if ($indentMatch.Success -and $indentMatch.Groups['indent'].Value.Length -le $serverIndent) {
+        $serverEnd = $index
+        break
+      }
+    }
+
+    $withoutServer = New-Object System.Collections.Generic.List[string]
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+      if ($index -lt $serverStart -or $index -ge $serverEnd) {
+        [void]$withoutServer.Add($lines[$index])
+      }
+    }
+    $lines = @($withoutServer)
+    $mcpRootIndex = -1
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+      if ($lines[$index] -match '^mcp_servers:\s*(?:#.*)?$') {
+        $mcpRootIndex = $index
+        break
+      }
+    }
+    $mcpBlockEnd = Get-YamlTopLevelBlockEnd $lines $mcpRootIndex
+  }
+
+  $mergedLines = New-Object System.Collections.Generic.List[string]
+  for ($index = 0; $index -lt $mcpBlockEnd; $index++) {
+    [void]$mergedLines.Add($lines[$index])
+  }
+  foreach ($line in $serverLines) { [void]$mergedLines.Add($line) }
+  for ($index = $mcpBlockEnd; $index -lt $lines.Count; $index++) {
+    [void]$mergedLines.Add($lines[$index])
+  }
+
+  Write-Utf8NoBom $configFile (($mergedLines -join [Environment]::NewLine).TrimEnd() + [Environment]::NewLine)
+  Success "MCP 配置已写入: $configFile"
 }
 
 # ============================================================================
