@@ -14,6 +14,34 @@ description: >-
 
 Orchestrate **writing** scene (`domain=writing`, `expert_id=writer`) memory search and create using MCP atomic tools only.
 
+## Trigger
+
+When TiMEM MCP is connected and the user is:
+- Creating content, copywriting, or creative writing
+- Editing tone, style, or audience parameters
+- Writing documentation or drafts
+- Working on a series where prior style/audience conventions apply
+
+## Instructions
+
+1. **Search**: Call `search_memories` first when prior style/audience could help (domain=writing)
+2. **Apply**: Use verified style/audience constraints to shape the draft
+3. **Produce**: Create or revise the content
+4. **Create (gated)**: Only call `create_memory` when reusable style rules are confirmed
+
+## Example
+
+Input: User says "按之前的语气写一段产品介绍"
+
+1. `search_memories(domain="writing", query_text="产品介绍 语气 风格", session_id="product-launch-copy")` → returns 1 hit with established tone guidelines
+2. Apply the recalled tone/audience constraints to the new draft
+3. Write the product introduction matching the established style
+4. No create_memory needed (style already stored)
+
+## Changelog
+
+- 0.1.0 (2026-08-18): Initial config.yaml, added Trigger/Instructions/Example/Changelog sections per skill development spec
+
 ## MCP preference (writing)
 
 **Search default on; write default off.** When TiMEM MCP is connected and the turn is writing-related:

@@ -1,0 +1,16 @@
+name: timem-writing-memory
+version: 0.1.0
+description: >
+  TiMEM long-term memory for writing scene (style, tone, audience, series conventions).
+  Use when TiMEM MCP is connected and the user is creating content or editing style.
+triggers:
+  - "writing memory"
+  - "writing style"
+  - "tone"
+  - "audience"
+  - "文案"
+  - "写作"
+  - "风格"
+  - "search_memories"
+  - "create_memory"
+category: productivity

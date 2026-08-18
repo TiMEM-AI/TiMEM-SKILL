@@ -14,6 +14,31 @@ description: >-
 
 `domain=general`. The server extracts facts and dedups against history — your job is only to call the tools every turn.
 
+## Trigger
+
+When TiMEM MCP is connected and the user is discussing:
+- Personal preferences, habits, role, or background
+- Office work facts, decisions, owners, deadlines, meeting conclusions
+- Any general (non-coding, non-writing) topic
+
+## Instructions
+
+1. **Search**: Call `search_memories` BEFORE answering (domain=general)
+2. **Answer**: Use relevant hits; ignore noise; abstain if stale
+3. **Create**: Call `create_memory` AFTER answering, passing 2-4 recent turns
+
+## Example
+
+Input: User says "我们团队 Q3 的 OKR 是什么？"
+
+1. `search_memories(domain="general", query_text="团队 Q3 OKR 目标", session_id="acme-q3")` → returns 1 hit with Q3 OKR details
+2. Answer using the recalled information
+3. `create_memory(domain="general", session_id="acme-q3", messages=[...recent turns...])`
+
+## Changelog
+
+- 0.1.0 (2026-08-18): Initial config.yaml, added Trigger/Instructions/Example/Changelog sections per skill development spec
+
 ## Every turn (AUTO, no opt-in needed)
 
 ```

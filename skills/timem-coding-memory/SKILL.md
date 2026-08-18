@@ -13,6 +13,33 @@ description: >-
 
 `domain=coding`. The server extracts facts and dedups against history — your job is only to call the tools every coding turn.
 
+## Trigger
+
+When TiMEM MCP is connected and the user is doing any of:
+- Coding, debugging, architecture, or module-related work
+- Asking about repo decisions, conventions, or lessons
+- Any turn where exploratory grep/read of codebase would happen
+
+## Instructions
+
+1. **Search**: Call `search_memories` BEFORE exploratory codebase work (domain=coding, search_tier=S3)
+2. **Verify**: Check recalled hits vs current code/AGENTS.md; apply only what fits
+3. **Work**: Do the coding task
+4. **Create**: Call `create_memory` AFTER answering, passing 2-4 relevant turns
+
+## Example
+
+Input: User asks "timem-mcp 的 rule learning 循环是怎么实现的？"
+
+1. `search_memories(domain="coding", query_text="rule learning 循环实现", session_id="timem-mcp")` → returns 2 hits about rule loop architecture
+2. Read the recalled context, verify against actual code
+3. Answer the question using recalled + fresh code context
+4. `create_memory(domain="coding", session_id="timem-mcp", messages=[...recent turns...])`
+
+## Changelog
+
+- 0.1.0 (2026-08-18): Initial config.yaml, added Trigger/Instructions/Example/Changelog sections per skill development spec
+
 ## Every coding turn (AUTO, no opt-in needed)
 
 ```
