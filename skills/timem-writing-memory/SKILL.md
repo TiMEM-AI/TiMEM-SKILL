@@ -2,12 +2,11 @@
 name: timem-writing-memory
 description: >-
   Calls TiMEM MCP search_memories / create_memory for writing-scene memory (style, tone,
-  audience, series conventions). Use when TiMEM MCP is connected and the user is creating
-  content, copywriting, editing tone/style/audience, documentation, or creative writing
-  (文案, 写作, 风格, 语气, 受众, 草稿, copy, tone, audience, style). Default: search early
-  when prior style/audience may help — including without explicit recall wording. Skip only
-  one-off grammar tweaks with no style context, coding/debug (timem-coding-memory), personal
-  non-writing prefs (timem-general-memory), or when MCP is disconnected.
+  audience, series conventions). AUTO on EVERY turn when TiMEM MCP is connected:
+  call search_memories BEFORE generating reply, then create_memory AFTER generating
+  reply. No exceptions, no skip. If user message contains "记", MUST call
+  create_memory. Coding/debug (timem-coding-memory), personal non-writing prefs
+  (timem-general-memory).
 ---
 
 # TiMEM Writing Memory
@@ -16,27 +15,28 @@ Orchestrate **writing** scene (`domain=writing`, `expert_id=writer`) memory sear
 
 ## Trigger
 
-When TiMEM MCP is connected and the user is:
-- Creating content, copywriting, or creative writing
-- Editing tone, style, or audience parameters
-- Writing documentation or drafts
-- Working on a series where prior style/audience conventions apply
+When TiMEM MCP is connected — **every turn, no exceptions**.
 
 ## Instructions
 
-1. **Search**: Call `search_memories` first when prior style/audience could help (domain=writing)
-2. **Apply**: Use verified style/audience constraints to shape the draft
-3. **Produce**: Create or revise the content
-4. **Create (gated)**: Only call `create_memory` when reusable style rules are confirmed
+1. **Search**: Call `search_memories` BEFORE generating reply (domain=writing)
+2. **Reply**: Generate reply using recalled style/audience context
+3. **Create**: Call `create_memory` AFTER generating reply, passing 2-4 recent turns — **every turn, no skip**
+4. **"记"字强制**: If user message contains "记", MUST call `create_memory` even if you think there's nothing new to store
 
 ## Example
 
 Input: User says "按之前的语气写一段产品介绍"
 
 1. `search_memories(domain="writing", query_text="产品介绍 语气 风格", session_id="product-launch-copy")` → returns 1 hit with established tone guidelines
-2. Apply the recalled tone/audience constraints to the new draft
-3. Write the product introduction matching the established style
-4. No create_memory needed (style already stored)
+2. Write the product introduction matching the established style
+3. `create_memory(domain="writing", session_id="product-launch-copy", messages=[...recent turns...])`
+
+Input: User says "记住，我们的文案风格要简洁直接"
+
+1. `search_memories(domain="writing", query_text="文案风格 简洁直接", session_id="product-launch-copy")`
+2. Reply confirming
+3. `create_memory(domain="writing", session_id="product-launch-copy", messages=[...recent turns...])` — "记"字触发，必须保存
 
 ## Changelog
 
@@ -44,12 +44,12 @@ Input: User says "按之前的语气写一段产品介绍"
 
 ## MCP preference (writing)
 
-**Search default on; write default off.** When TiMEM MCP is connected and the turn is writing-related:
+**Search and create every turn.** When TiMEM MCP is connected:
 
-1. **Default: call `search_memories` first** when prior style, tone, audience, or series conventions could shape the draft — even without “按之前的语气”.
-2. **When unsure → search** — Skip only one-off edits with no reusable style context.
-3. **Do not under-call** — “I can draft without tools” is **not** a reason to skip search when style/audience may matter.
-4. **Write stays gated** — more search ≠ more `create_memory`; create only when reusable style rules are confirmed.
+1. **Call `search_memories` BEFORE generating reply** — every turn, no exceptions.
+2. **Call `create_memory` AFTER generating reply** — every turn, no exceptions.
+3. **No skip** — "I can draft without tools" is **not** a skip reason. "One-off edit" is **not** a skip reason.
+4. **"记"字规则**: If user message contains "记", MUST call `create_memory`. No exceptions.
 
 ## Prerequisites
 
@@ -68,32 +68,19 @@ Do **not** use random UUIDs per turn.
 ## Per-turn checklist
 
 ```
-- [ ] 1. Skip only one-off grammar/punctuation with no style context; else call search_memories FIRST
-- [ ] 2. search_memories(domain=writing, query_text=3–12 words, session_id=optional series)
-- [ ] 3. Apply verified style/audience constraints to draft
-- [ ] 4. Produce or revise content
-- [ ] 5. Gated create? Confirmed reusable style/audience/forbidden words → create_memory
+1. search_memories(domain=writing, query_text=3–12 words, session_id=optional series) — BEFORE reply
+2. Generate reply using recalled style/audience context
+3. create_memory(domain=writing, messages=[2-4 recent turns]) — AFTER reply, every turn
+4. If user message contains "记" → MUST call create_memory (redundant with #3, but explicit)
 ```
 
 ## When to search
 
-- User wants output matching prior style ("按之前的语气", "same tone as last time")
-- User asks what style/audience was established
-- Starting or continuing a piece where stored style/audience may help — **even without** explicit recall wording
-- Starting a new piece in an ongoing series (use `session_id`)
-- When unsure → **search**
-
-Do **not** search for unrelated coding tasks or pure personal non-writing prefs.
+**Every turn.** No exceptions.
 
 ## When to create
 
-- User confirms style, tone, audience, or forbidden words to reuse
-- User says remember this writing preference
-- A reusable writing convention is established for a series
-
-Do **not** create: one-off drafts with no reusable insight, full article dumps.
-
-Max **0–3** writing memories per task.
+**Every turn.** No exceptions. If user message contains "记", MUST call `create_memory`.
 
 ## What to remember (priority)
 
@@ -105,8 +92,7 @@ Max **0–3** writing memories per task.
 ## Anti-patterns
 
 - Do not use `domain=coding` for pure writing work
-- Do not skip search because the model can draft without tools when style/audience may matter
-- Do not create every draft — write stays gated
+- Do not skip search or create — every turn, no exceptions
 - Do not store entire articles in `messages` — summarize constraints
 
 ## References

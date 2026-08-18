@@ -2,11 +2,12 @@
 name: timem-coding-memory
 description: >-
   TiMEM long-term memory for coding context (decisions, lessons, conventions,
-  module/architecture orientation). AUTO on every coding turn when TiMEM MCP is
-  connected: call search_memories BEFORE exploratory codebase work, then
-  create_memory AFTER answering. Do not skip because "the repo might answer".
-  Skip only typo/single-line format fixes or pure trivia. Personal/office →
-  timem-general-memory; writing style/audience → timem-writing-memory.
+  module/architecture orientation). AUTO on EVERY turn when TiMEM MCP is
+  connected: call search_memories BEFORE generating reply, then
+  create_memory AFTER generating reply. No exceptions, no skip.
+  If user message contains "记", MUST call create_memory.
+  Personal/office → timem-general-memory; writing style/audience →
+  timem-writing-memory.
 ---
 
 # TiMEM Coding Memory
@@ -15,40 +16,44 @@ description: >-
 
 ## Trigger
 
-When TiMEM MCP is connected and the user is doing any of:
-- Coding, debugging, architecture, or module-related work
-- Asking about repo decisions, conventions, or lessons
-- Any turn where exploratory grep/read of codebase would happen
+When TiMEM MCP is connected — **every turn, no exceptions**.
 
 ## Instructions
 
-1. **Search**: Call `search_memories` BEFORE exploratory codebase work (domain=coding, search_tier=S3)
-2. **Verify**: Check recalled hits vs current code/AGENTS.md; apply only what fits
-3. **Work**: Do the coding task
-4. **Create**: Call `create_memory` AFTER answering, passing 2-4 relevant turns
+1. **Search**: Call `search_memories` BEFORE generating reply (domain=coding, search_tier=S3)
+2. **Reply**: Generate reply using recalled context + fresh code/work context
+3. **Create**: Call `create_memory` AFTER generating reply, passing 2-4 recent turns — **every turn, no skip**
+4. **"记"字强制**: If user message contains "记", MUST call `create_memory` even if you think there's nothing new to store
 
 ## Example
 
 Input: User asks "timem-mcp 的 rule learning 循环是怎么实现的？"
 
 1. `search_memories(domain="coding", query_text="rule learning 循环实现", session_id="timem-mcp")` → returns 2 hits about rule loop architecture
-2. Read the recalled context, verify against actual code
-3. Answer the question using recalled + fresh code context
-4. `create_memory(domain="coding", session_id="timem-mcp", messages=[...recent turns...])`
+2. Answer the question using recalled + fresh code context
+3. `create_memory(domain="coding", session_id="timem-mcp", messages=[...recent turns...])`
+
+Input: User says "记住这个模块用 React 19"
+
+1. `search_memories(domain="coding", query_text="模块 React 19", session_id="timem-mcp")`
+2. Reply confirming
+3. `create_memory(domain="coding", session_id="timem-mcp", messages=[...recent turns...])` — "记"字触发，必须保存
 
 ## Changelog
 
 - 0.1.0 (2026-08-18): Initial config.yaml, added Trigger/Instructions/Example/Changelog sections per skill development spec
 
-## Every coding turn (AUTO, no opt-in needed)
+## Every coding turn (AUTO, no opt-in needed, no skip)
 
 ```
-1) search_memories   BEFORE exploratory grep/read — even if you could just read the code
-2) work              verify hits vs code/AGENTS.md; if count=0 read memory_gap / elevate_create
-3) create_memory     AFTER answering — pass 2–4 relevant turns
+1) search_memories   BEFORE generating reply — every turn, no exceptions
+2) reply             use recalled context + fresh code/work context
+3) create_memory     AFTER generating reply — every turn, no exceptions
 ```
 
-Do **not** wait for "remember / 请记住". "I can just read the repo" is **not** a skip reason. Module/architecture/overview questions are coding turns — search, don't skip.
+No skip conditions. No "I can just read the repo". No "this is trivia". Every turn: search before, create after.
+
+**"记"字规则**: If user message contains "记", MUST call `create_memory`. No exceptions.
 
 ## search_tier (simplified)
 
@@ -62,15 +67,9 @@ Default is `S3` for almost everything. Only two exceptions:
 
 No Must/Should/Skip classification. When unsure → `S3`.
 
-## Skip (narrow)
+## Skip
 
-| Skip search | Skip create |
-|---|---|
-| typo / single-line format fix | unverified guess (summarized without reading code) |
-| pure trivia ("Python list comprehension syntax") | transient debug state ("breakpoint at L42") |
-| user said "别搜" / "don't search" | nothing new vs. what you just searched |
-
-When in doubt → search. False positives are cheap, missed context is expensive.
+No skip. Every turn: search before reply, create after reply.
 
 ## Parameters
 

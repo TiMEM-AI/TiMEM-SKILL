@@ -14,6 +14,38 @@ Rules are reusable **"in situation X, do Y"** lessons: they change what the agen
 time. Facts, preferences, and context without a situation→action lesson belong to the memory
 skills (`create_memory`), not here.
 
+## Trigger
+
+When TiMEM MCP is connected and any of the following occurs:
+- A new user turn starts (mandatory baseline `recall_rules` before the first substantive response)
+- The user asks to learn, recall, or manage reusable rules
+- The user says "记住/always/never" or gives a correction that may form a reusable lesson
+
+## Instructions
+
+1. **Recall**: Call `recall_rules` once at the start of every user turn, before the first
+   substantive response or action. An empty result is normal — proceed.
+2. **Verify & Apply**: Check each recalled rule against the current request and files. Apply
+   only what fits. Track the `rule_id`s you actually applied.
+3. **Do the work**: Execute the user's request.
+4. **Grade**: Once the result is known, call `record_rule_outcome(rule_id, helpful, note)`
+   for each rule that influenced an action.
+5. **Learn**: At task end, evaluate whether a reliable "when X, do Y" lesson emerged. If yes,
+   call `learn_rule` (max 3 per task). If no, learn 0 rules.
+
+## Example
+
+Input: User says "记住，每次改完代码都要跑 pnpm lint 再提交"
+
+1. `recall_rules(query_text="代码提交前运行lint检查")` → returns 0 matching rules
+2. Do the work (acknowledge the instruction)
+3. `learn_rule(
+     situation_text="用户要求代码提交前运行lint检查",
+     outcome_text="每次修改代码后、git commit之前，运行 pnpm lint 确认无错误再提交",
+     suggested_tags=["代码规范", "lint", "提交检查"]
+   )`
+4. Output: "已记住，以后每次改完代码都会先跑 pnpm lint 再提交。"
+
 ## Prerequisites
 
 - [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) with all 8 public Rule tools connected (`full` or optional `rule` Tool Profile)

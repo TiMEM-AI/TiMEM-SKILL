@@ -1,0 +1,13 @@
+name: timem-rule-learning
+version: 0.1.0
+description: >
+  Orchestrates the TiMEM rule-learning loop (recall, apply, grade, learn)
+  via MCP atomic tools. Use on every user turn whenever TiMEM MCP is connected.
+triggers:
+  - "rule learning"
+  - "recall rules"
+  - "learn rule"
+  - "规则学习"
+  - "recall_rules"
+  - "learn_rule"
+category: productivity
