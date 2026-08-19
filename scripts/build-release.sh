@@ -99,9 +99,7 @@ REQUIRED_FILES=(
 )
 
 REQUIRED_SKILLS=(
-  "skills/timem-coding-memory"
-  "skills/timem-general-memory"
-  "skills/timem-writing-memory"
+  "skills/timem-memory-skill"
   "skills/timem-rule-learning"
   "skills/timem-knowledge"
 )

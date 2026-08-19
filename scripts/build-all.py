@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync shared MCP docs, then build coding and general dist packages."""
+"""Sync shared MCP docs, then build merged memory skill dist package."""
 
 from __future__ import annotations
 
@@ -11,8 +11,7 @@ SCRIPTS = Path(__file__).resolve().parent
 
 def main() -> None:
     runpy.run_path(str(SCRIPTS / "sync-shared-mcp-tools.py"), run_name="__main__")
-    runpy.run_path(str(SCRIPTS / "build-coding-standalone.py"), run_name="__main__")
-    runpy.run_path(str(SCRIPTS / "build-general-standalone.py"), run_name="__main__")
+    runpy.run_path(str(SCRIPTS / "build-memory-standalone.py"), run_name="__main__")
     print("build-all complete.")
 
 

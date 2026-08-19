@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Build coding skill dist packages: full (multi-file) and standalone (single SKILL.md)."""
+"""Build merged memory skill dist packages: full (multi-file) and standalone (single SKILL.md).
+
+Replaces build-coding-standalone.py + build-general-standalone.py.
+The merged skill covers coding, general, and writing domains.
+"""
 
 from __future__ import annotations
 
@@ -9,36 +13,36 @@ import warnings
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "skills" / "timem-coding-memory"
-DIST_FULL = ROOT / "dist" / "full" / "timem-coding-memory"
-DIST_STANDALONE = ROOT / "dist" / "standalone" / "timem-coding-memory"
+SRC = ROOT / "skills" / "timem-memory-skill"
+DIST_FULL = ROOT / "dist" / "full" / "timem-memory-skill"
+DIST_STANDALONE = ROOT / "dist" / "standalone" / "timem-memory-skill"
 
-LINE_WARN_THRESHOLD = 400  # prefer ≤350; warn above 400
+LINE_WARN_THRESHOLD = 500  # merged skill is larger; warn above 500
 
 # (source filename, H2 heading used in standalone)
 REF_SECTIONS = [
+    ("mcp-tools.md", "MCP tools (memory skill)"),
+    ("workflow.md", "Memory workflow (full)"),
+    ("examples.md", "Memory examples"),
     ("search-tier.md", "Coding Search Tier (full)"),
     ("write-rubric.md", "Coding write rubric (full)"),
-    ("examples.md", "Coding memory examples"),
-    ("mcp-tools.md", "MCP tools (coding)"),
 ]
 
 # Map relative .md targets → standalone section titles for link scrubbing.
 LINK_TARGET_TO_SECTION = {
-    "write-rubric.md": "Coding write rubric (full)",
-    "references/write-rubric.md": "Coding write rubric (full)",
+    "mcp-tools.md": "MCP tools (memory skill)",
+    "references/mcp-tools.md": "MCP tools (memory skill)",
+    "workflow.md": "Memory workflow (full)",
+    "references/workflow.md": "Memory workflow (full)",
+    "examples.md": "Memory examples",
+    "references/examples.md": "Memory examples",
     "search-tier.md": "Coding Search Tier (full)",
     "references/search-tier.md": "Coding Search Tier (full)",
-    "examples.md": "Coding memory examples",
-    "references/examples.md": "Coding memory examples",
-    "mcp-tools.md": "MCP tools (coding)",
-    "references/mcp-tools.md": "MCP tools (coding)",
-    "agents-snippet.md": "dist/full/timem-coding-memory/assets/agents-snippet.md",
-    "assets/agents-snippet.md": "dist/full/timem-coding-memory/assets/agents-snippet.md",
+    "write-rubric.md": "Coding write rubric (full)",
+    "references/write-rubric.md": "Coding write rubric (full)",
+    "agents-snippet.md": "dist/full/timem-memory-skill/assets/agents-snippet.md",
+    "assets/agents-snippet.md": "dist/full/timem-memory-skill/assets/agents-snippet.md",
 }
-
-# Keep all examples (source is already condensed).
-KEEP_EXAMPLE_ORIG_NUMS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 
 def _strip_md_title(text: str) -> str:
@@ -73,14 +77,11 @@ def _scrub_inlined_markdown(text: str) -> str:
 
     def repl(match: re.Match[str]) -> str:
         label, target = match.group(1), match.group(2)
-        # Ignore http(s) and mailto
         if re.match(r"^(https?:|mailto:|#)", target, flags=re.I):
             return match.group(0)
-        # Strip anchors/query
         path = target.split("#", 1)[0].split("?", 1)[0]
         if not path.endswith(".md"):
             return match.group(0)
-        # Normalize ./prefix
         path = path.lstrip("./")
         section = LINK_TARGET_TO_SECTION.get(path) or LINK_TARGET_TO_SECTION.get(
             Path(path).name
@@ -88,16 +89,12 @@ def _scrub_inlined_markdown(text: str) -> str:
         if section and section.startswith("dist/"):
             return f"see `{section}` in the full package"
         if section:
-            # Avoid leaving "*.md" in the visible text (fails path assertions).
             return f"**{section}**"
-        # Unknown .md — keep label only if it is not itself a filename
         if label.endswith(".md"):
             return "inlined section below"
         return label
 
-    # [label](target)
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", repl, text)
-    # Normalize "See **Section**" / "see **Section** below" (sentence-case See)
     text = re.sub(
         r"([.!?]\s+)[Ss]ee\s+\*\*([^*]+)\*\*(?:\s+below)?",
         r"\1See **\2** below",
@@ -106,12 +103,6 @@ def _scrub_inlined_markdown(text: str) -> str:
     text = re.sub(
         r"(?<![.!?]\s)(?<![.!?])\bsee\s+\*\*([^*]+)\*\*(?:\s+below)?",
         r"see **\1** below",
-        text,
-    )
-    # Bare See write-rubric.md style leftovers
-    text = re.sub(
-        r"\bSee\s+write-rubric\.md\b",
-        "see **Coding write rubric (full)** below",
         text,
     )
     return text
@@ -126,58 +117,39 @@ def _assert_no_md_file_refs(text: str) -> None:
     if bad_links:
         raise SystemExit(f"Standalone still has relative .md links: {bad_links}")
 
-    # Known skill-relative basenames that must not appear as file paths.
     for basename in (
-        "write-rubric.md",
-        "search-tier.md",
-        "examples.md",
         "mcp-tools.md",
+        "workflow.md",
+        "examples.md",
+        "search-tier.md",
+        "write-rubric.md",
         "agents-snippet.md",
     ):
         for m in re.finditer(re.escape(basename), text):
             start = m.start()
-            # Allow the documented full-package AGENTS path.
             window = text[max(0, start - 80) : m.end()]
-            if basename == "agents-snippet.md" and "dist/full/timem-coding-memory/assets/" in window:
+            if basename == "agents-snippet.md" and "dist/full/timem-memory-skill/assets/" in window:
                 continue
             raise SystemExit(f"Standalone still references file path {basename!r}")
-
-
-def _condense_examples(text: str) -> str:
-    """Keep high-signal examples and renumber Example 1..N consecutively."""
-    parts = re.split(r"(?=## Example \d+)", text)
-    intro = parts[0] if parts and not parts[0].startswith("## Example") else ""
-    examples = [p for p in parts if p.startswith("## Example")]
-
-    kept: list[str] = []
-    for part in examples:
-        m = re.match(r"## Example (\d+)", part)
-        if not m:
-            continue
-        num = int(m.group(1))
-        if num not in KEEP_EXAMPLE_ORIG_NUMS:
-            continue
-        kept.append(part)
-
-    renumbered: list[str] = []
-    for i, part in enumerate(kept, start=1):
-        renumbered.append(
-            re.sub(r"^## Example \d+", f"## Example {i}", part, count=1)
-        )
-
-    out = intro + "".join(renumbered)
-    return out.strip() + "\n"
 
 
 def _collapse_extra_rules(text: str) -> str:
     """Remove empty / duplicate horizontal rules left after cuts."""
     text = re.sub(r"(?:\n---\n){2,}", "\n\n---\n\n", text)
     text = re.sub(r"\n---\n\s*\n---\n", "\n\n---\n\n", text)
-    # Drop a rule that only sits in whitespace before the next heading.
     text = re.sub(r"\n---\n+(?=#{1,6} )", "\n\n", text)
-    # Collapse 3+ blank lines to 2.
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip() + "\n"
+
+
+def _condense_examples(text: str) -> str:
+    """Keep all examples; source is already organized by domain."""
+    return _collapse_extra_rules(text)
+
+
+def _condense_workflow_for_standalone(text: str) -> str:
+    """Source is already condensed; just collapse extra rules."""
+    return _collapse_extra_rules(text)
 
 
 def _condense_search_tier_for_standalone(text: str) -> str:
@@ -191,43 +163,8 @@ def _condense_write_rubric_for_standalone(text: str) -> str:
 
 
 def _memory_only_mcp_tools(text: str) -> str:
-    """Slim MCP reference for coding standalone (memory tools + scene map)."""
-    text = re.sub(
-        r"^# MCP tools \(coding scene\).*?\n---\n+",
-        "",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    cut = re.search(
-        r"\n---\n\n## `list_knowledge_bases`.*?(?=\n---\n\n## Scene → domain mapping)",
-        text,
-        flags=re.DOTALL,
-    )
-    if cut:
-        text = text[: cut.start()] + "\n" + text[cut.end() :]
-
-    # Prefer coding-domain create_memory example in standalone.
-    text = text.replace(
-        """create_memory(
-  domain="general",
-  session_id="personal",
-  messages=[
-    {"role": "user", "content": "Remember I prefer concise answers."},
-    {"role": "assistant", "content": "Stored: prefer concise answers."},
-  ],
-)""",
-        """create_memory(
-  domain="coding",
-  session_id="timem-mcp",
-  memory_hint="convention",
-  messages=[
-    {"role": "user", "content": "What are the memory-related modules?"},
-    {"role": "assistant", "content": "Verified summary: modules, paths, roles."},
-  ],
-)""",
-    )
-    # Drop optional classify + ready prose (SKILL prerequisites cover ready).
+    """Slim MCP reference for memory standalone (memory tools + scene map)."""
+    # Drop ready / classify long sections; keep scene map.
     text = re.sub(
         r"\n---\n\n## `ready`.*?(?=\n---\n\n## Scene → domain mapping|\n## Scene → domain mapping|\Z)",
         "\n",
@@ -246,19 +183,8 @@ def _memory_only_mcp_tools(text: str) -> str:
     text = re.sub(
         r"\n## `delete_memory`.*?(?=\n---\n|\n## |\Z)",
         "\n## `delete_memory`\n\n"
-        "Soft-delete by ID after user intent. Search with `search_tier=\"S6\"` to get `memory_id`, "
+        "Soft-delete by ID after user intent. Search (coding: `search_tier=\"S6\"`) to get `memory_id`, "
         "confirm if ambiguous, then `delete_memory(memory_id=\"...\")`.\n\n",
-        text,
-        count=1,
-        flags=re.DOTALL,
-    )
-    # Compact empty-search field table to one paragraph.
-    text = re.sub(
-        r"\n### Empty coding search.*?(?=\n---\n|\n## |\Z)",
-        "\n\n### Empty coding search (`domain=coding`, `count=0`)\n\n"
-        "May include `memory_gap`, `guidance`, `elevate_create`, `suggested_next` "
-        "(does **not** auto-create). Work from code; apply write rubric before create. "
-        "`elevate_create` needs `search_tier` + `session_id`.\n\n",
         text,
         count=1,
         flags=re.DOTALL,
@@ -272,32 +198,16 @@ def _split_frontmatter(text: str) -> tuple[str, str]:
     end = text.find("\n---\n", 4)
     if end < 0:
         raise ValueError("SKILL.md frontmatter not closed")
-    fm = text[: end + 5]  # include closing ---\n
+    fm = text[: end + 5]
     body = text[end + 5 :]
     return fm, body
 
 
 def _rewrite_body_for_standalone(body: str) -> str:
-    """Point checklist/summaries at inlined sections; drop AGENTS + external refs."""
+    """Point references at inlined sections; drop AGENTS + external refs."""
     body = body.replace(
-        "Classify Must / Should / Skip (references/search-tier.md)",
-        "Classify Must / Should / Skip (see Coding Search Tier below)",
-    )
-    body = body.replace(
-        "Gated WRITE EVAL only (references/write-rubric.md)",
-        "Gated WRITE EVAL only (see Coding write rubric below)",
-    )
-    body = body.replace(
-        "Details: [references/search-tier.md](references/search-tier.md)",
-        "Details: see **Coding Search Tier (full)** below.",
-    )
-    body = body.replace(
-        "See [write-rubric.md](references/write-rubric.md).",
-        "See **Coding write rubric (full)** below.",
-    )
-    body = body.replace(
-        "MCP tools: [references/mcp-tools.md](references/mcp-tools.md)",
-        "MCP tools: see **MCP tools (coding)** below.",
+        "MCP tools: see [references/mcp-tools.md](references/mcp-tools.md)",
+        "MCP tools: see **MCP tools (memory skill)** below.",
     )
 
     # Remove AGENTS.md snippet section (template lives in full package assets/).
@@ -314,12 +224,13 @@ def _rewrite_body_for_standalone(body: str) -> str:
         r"\n## References\n\n(?:- \[.*?\]\(.*?\)\n)+",
         "\n## References\n\n"
         "Inlined below:\n\n"
+        "- MCP tools (memory skill)\n"
+        "- Memory workflow (full)\n"
+        "- Memory examples\n"
         "- Coding Search Tier (full)\n"
-        "- Coding write rubric (full)\n"
-        "- Coding memory examples\n"
-        "- MCP tools (coding)\n\n"
+        "- Coding write rubric (full)\n\n"
         "Optional AGENTS.md paste template (human-facing, not required at runtime): "
-        "in the repo at `dist/full/timem-coding-memory/assets/agents-snippet.md`.\n\n",
+        "in the repo at `dist/full/timem-memory-skill/assets/agents-snippet.md`.\n\n",
         body,
         count=1,
     )
@@ -332,17 +243,12 @@ def _validate_standalone(text: str) -> list[str]:
 
 
 def _assert_standalone_quality(text: str) -> None:
-    if not text.startswith("---\n") or "name: timem-coding-memory" not in text:
+    if not text.startswith("---\n") or "name: timem-memory-skill" not in text:
         raise SystemExit("Standalone SKILL.md failed frontmatter/name check")
     if "../../shared" in text:
         raise SystemExit("Standalone still references ../../shared")
 
     _assert_no_md_file_refs(text)
-
-    # Example titles must be consecutive Example 1..N (## or ### after demote)
-    nums = [int(n) for n in re.findall(r"^#{2,3} Example (\d+)\b", text, flags=re.MULTILINE)]
-    if nums and nums != list(range(1, len(nums) + 1)):
-        raise SystemExit(f"Standalone example numbers not consecutive: {nums}")
 
     if re.search(r"^## AGENTS\.md snippet\s*$", text, flags=re.MULTILINE):
         raise SystemExit("Standalone must not contain AGENTS.md snippet section")
@@ -355,7 +261,7 @@ def build_standalone_skill_md() -> str:
 
     parts = [
         frontmatter.rstrip() + "\n",
-        "\n<!-- Generated by scripts/build-coding-standalone.py; do not edit by hand. -->\n",
+        "\n<!-- Generated by scripts/build-memory-standalone.py; do not edit by hand. -->\n",
         body.rstrip() + "\n",
     ]
 
@@ -365,6 +271,8 @@ def build_standalone_skill_md() -> str:
         content = re.sub(r"<!-- Generated from .*? -->\n+", "", content)
         if filename == "examples.md":
             content = _condense_examples(content)
+        if filename == "workflow.md":
+            content = _condense_workflow_for_standalone(content)
         if filename == "search-tier.md":
             content = _condense_search_tier_for_standalone(content)
         if filename == "write-rubric.md":
