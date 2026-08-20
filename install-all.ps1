@@ -1,11 +1,18 @@
-<#
+﻿<#
 .SYNOPSIS
   TiMEM Skill 一键安装 (Windows PowerShell 版)
 .DESCRIPTION
   为所有已检测的 Agent 工具安装 TiMEM Skills + MCP 配置
 .USAGE
   $env:TIMEM_API_KEY = "tmk_xxx"; irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1 | iex
+  .\install-all.ps1 -ApiKey "tmk_xxx" -Agent "codex"
 #>
+
+param(
+  [string]$ApiKey,
+  [Alias('Agent')]
+  [string]$AgentSelection
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -38,9 +45,10 @@ $AGENTS = @(
 # Claude Desktop
 $CLAUDE_DESKTOP_CONFIG = "$env:APPDATA\Claude\claude_desktop_config.json"
 
-$API_KEY = $env:TIMEM_API_KEY
+$API_KEY = if ($ApiKey) { $ApiKey } else { $env:TIMEM_API_KEY }
 $SILENT_MODE = $false
-$AGENT_FILTER = $env:TIMEM_AGENT
+$AGENT_FILTER = if ($AgentSelection) { $AgentSelection } else { $env:TIMEM_AGENT }
+$AGENT_FILTER_VALUES = @()
 $SKILLS_FILTER = ""
 
 # ============================================================================
@@ -50,6 +58,26 @@ function Info($msg) { Write-Host "  [INFO] $msg" }
 function Success($msg) { Write-Host "  [OK] $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "  [WARN] $msg" -ForegroundColor Yellow }
 function Err($msg) { Write-Host "  [FAIL] $msg" -ForegroundColor Red }
+
+function Set-AgentFilter([string]$value) {
+  $script:AGENT_FILTER_VALUES = @()
+  if ([string]::IsNullOrWhiteSpace($value)) { return }
+
+  foreach ($item in ($value -split ',')) {
+    $normalized = $item.Trim().ToLowerInvariant()
+    if ($normalized -and ($script:AGENT_FILTER_VALUES -notcontains $normalized)) {
+      $script:AGENT_FILTER_VALUES += $normalized
+    }
+  }
+}
+
+function Test-AgentSelected($agentName) {
+  if ($script:AGENT_FILTER_VALUES.Count -eq 0) { return $true }
+  $normalized = ([string]$agentName).Trim().ToLowerInvariant()
+  return $script:AGENT_FILTER_VALUES -contains $normalized
+}
+
+Set-AgentFilter $AGENT_FILTER
 
 function Write-Utf8NoBom($path, [string]$content) {
   New-Item -ItemType Directory -Path (Split-Path $path) -Force | Out-Null
@@ -434,7 +462,10 @@ function Select-Agents {
           $selected += $detected[$n].name
         }
       }
-      if ($selected) { $script:AGENT_FILTER = $selected -join "," }
+      if ($selected) {
+        $script:AGENT_FILTER = $selected -join ","
+        Set-AgentFilter $script:AGENT_FILTER
+      }
     }
     default { }
   }
@@ -493,7 +524,7 @@ foreach ($agent in $AGENTS) {
   Write-Host ""
   Write-Host "━━━ $($agent.name) ━━━"
 
-  if ($AGENT_FILTER -and ($AGENT_FILTER -notcontains $agent.name)) {
+  if (-not (Test-AgentSelected $agent.name)) {
     Info "被过滤跳过"
     $results += @{name=$agent.name; status="SKIP"}
     continue
@@ -525,12 +556,18 @@ foreach ($agent in $AGENTS) {
 }
 
 # Claude Desktop
-if (Test-Path $CLAUDE_DESKTOP_CONFIG) {
-  Write-Host ""
-  Write-Host "━━━ claude-desktop ━━━"
+Write-Host ""
+Write-Host "━━━ claude-desktop ━━━"
+if (-not (Test-AgentSelected "claude-desktop")) {
+  Info "被过滤跳过"
+  $results += @{name="claude-desktop"; status="SKIP"}
+} elseif (Test-Path $CLAUDE_DESKTOP_CONFIG) {
   Success "检测到 Claude Desktop"
   Merge-McpJson $CLAUDE_DESKTOP_CONFIG "claude-desktop" "mcpServers"
   $results += @{name="claude-desktop"; status="OK"}
+} else {
+  Info "未检测到 Claude Desktop (跳过)"
+  $results += @{name="claude-desktop"; status="SKIP"}
 }
 
 # 摘要

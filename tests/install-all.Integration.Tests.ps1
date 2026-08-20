@@ -1,7 +1,8 @@
 function Invoke-InstallAllInSandbox {
   param(
     [string]$AgentName,
-    [string]$TestRoot
+    [string]$TestRoot,
+    [switch]$UseCli
   )
 
   $scriptPath = Join-Path $PSScriptRoot '..' 'install-all.ps1'
@@ -12,7 +13,7 @@ function Invoke-InstallAllInSandbox {
     APPDATA = Join-Path $TestRoot 'appdata'
     TEMP = Join-Path $TestRoot 'temp'
     TIMEM_API_KEY = 'test-key-12345678'
-    TIMEM_AGENT = $AgentName
+    TIMEM_AGENT = if ($UseCli) { $null } else { $AgentName }
   }
   $previous = @{}
 
@@ -22,7 +23,18 @@ function Invoke-InstallAllInSandbox {
       [Environment]::SetEnvironmentVariable($name, $environment[$name], 'Process')
     }
 
-    $output = "3`n" | & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $command 2>&1 | Out-String
+    if ($UseCli) {
+      $arguments = @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $scriptPath,
+        '-ApiKey', 'test-key-12345678',
+        '-Agent', $AgentName
+      )
+      $output = "1`ny`n" | & powershell.exe @arguments 2>&1 | Out-String
+    } else {
+      $output = "3`n" | & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $command 2>&1 | Out-String
+    }
     return [pscustomobject]@{
       ExitCode = $LASTEXITCODE
       Output = $output
@@ -102,6 +114,76 @@ Describe 'install-all.ps1 Windows functional behavior' {
       ($config.mcpServers.PSObject.Properties.Name -contains 'TiMEM-SPACE') | Should Be $true
       ($null -eq $config.mcpServers.mcpServers) | Should Be $true
       ($config.mcpServers.'TiMEM-SPACE'.PSObject.Properties.Name -contains 'type') | Should Be $false
+    } finally {
+      if (Test-Path -LiteralPath $testRoot) {
+        [IO.Directory]::Delete($testRoot, $true)
+      }
+    }
+  }
+
+  It 'honors a single CLI agent and leaves Claude Desktop unchanged' {
+    if (-not (Get-Command powershell.exe -ErrorAction SilentlyContinue)) { return }
+
+    $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('timem-install-test-' + [guid]::NewGuid().ToString('N'))
+    $profileDir = Join-Path $testRoot 'profile'
+    $configDir = Join-Path $profileDir '.codex'
+    $desktopDir = Join-Path (Join-Path $testRoot 'appdata') 'Claude'
+    $desktopConfig = Join-Path $desktopDir 'claude_desktop_config.json'
+
+    try {
+      New-Item -ItemType Directory -Force -Path $configDir,$desktopDir,(Join-Path $testRoot 'temp') | Out-Null
+      [IO.File]::WriteAllText(
+        (Join-Path $configDir 'config.toml'),
+        '# existing codex config' + [Environment]::NewLine,
+        (New-Object System.Text.UTF8Encoding($false))
+      )
+      $seedDesktopConfig = '{"mcpServers":{"existing":{"url":"https://existing.example/mcp"}}}'
+      [IO.File]::WriteAllText($desktopConfig, $seedDesktopConfig, (New-Object System.Text.UTF8Encoding($false)))
+
+      $firstRun = Invoke-InstallAllInSandbox -AgentName 'codex' -TestRoot $testRoot -UseCli
+      $secondRun = Invoke-InstallAllInSandbox -AgentName 'codex' -TestRoot $testRoot -UseCli
+      $codexConfig = [IO.File]::ReadAllText((Join-Path $configDir 'config.toml'))
+      $desktopAfter = [IO.File]::ReadAllText($desktopConfig)
+
+      $firstRun.ExitCode | Should Be 0
+      $secondRun.ExitCode | Should Be 0
+      ($codexConfig -match 'TiMEM-SPACE') | Should Be $true
+      $desktopAfter | Should Be $seedDesktopConfig
+      ($firstRun.Output -match '━━━ claude-desktop ━━━') | Should Be $true
+      ($firstRun.Output -match '被过滤跳过') | Should Be $true
+    } finally {
+      if (Test-Path -LiteralPath $testRoot) {
+        [IO.Directory]::Delete($testRoot, $true)
+      }
+    }
+  }
+
+  It 'treats comma-separated agent filters as a set' {
+    if (-not (Get-Command powershell.exe -ErrorAction SilentlyContinue)) { return }
+
+    $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('timem-install-test-' + [guid]::NewGuid().ToString('N'))
+    $profileDir = Join-Path $testRoot 'profile'
+    $codexDir = Join-Path $profileDir '.codex'
+    $cursorDir = Join-Path $profileDir '.cursor'
+    $desktopDir = Join-Path (Join-Path $testRoot 'appdata') 'Claude'
+    $desktopConfig = Join-Path $desktopDir 'claude_desktop_config.json'
+
+    try {
+      New-Item -ItemType Directory -Force -Path $codexDir,$cursorDir,$desktopDir,(Join-Path $testRoot 'temp') | Out-Null
+      [IO.File]::WriteAllText((Join-Path $codexDir 'config.toml'), '# codex' + [Environment]::NewLine, (New-Object System.Text.UTF8Encoding($false)))
+      [IO.File]::WriteAllText((Join-Path $cursorDir 'mcp.json'), '{"mcpServers":{}}', (New-Object System.Text.UTF8Encoding($false)))
+      $seedDesktopConfig = '{"mcpServers":{"existing":{"url":"https://existing.example/mcp"}}}'
+      [IO.File]::WriteAllText($desktopConfig, $seedDesktopConfig, (New-Object System.Text.UTF8Encoding($false)))
+
+      $firstRun = Invoke-InstallAllInSandbox -AgentName 'codex,cursor' -TestRoot $testRoot
+      $codexConfig = [IO.File]::ReadAllText((Join-Path $codexDir 'config.toml'))
+      $cursorConfig = [IO.File]::ReadAllText((Join-Path $cursorDir 'mcp.json'))
+      $desktopAfter = [IO.File]::ReadAllText($desktopConfig)
+
+      $firstRun.ExitCode | Should Be 0
+      ($codexConfig -match 'TiMEM-SPACE') | Should Be $true
+      ($cursorConfig -match 'TiMEM-SPACE') | Should Be $true
+      $desktopAfter | Should Be $seedDesktopConfig
     } finally {
       if (Test-Path -LiteralPath $testRoot) {
         [IO.Directory]::Delete($testRoot, $true)

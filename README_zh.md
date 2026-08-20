@@ -25,7 +25,7 @@ unzip timem-skill.zip
 cd timem-skill && bash install-all.sh --api-key 你的_TIMEM_API_KEY
 ```
 
-> **Windows (PowerShell)：** 下载解压后运行 `.\install-all.ps1 -ApiKey 你的_TIMEM_API_KEY`
+> **Windows (PowerShell)：** 下载解压后运行 `.\install-all.ps1 -ApiKey 你的_TIMEM_API_KEY -Agent codex`；`-Agent` 支持逗号分隔多个 agent，也可用环境变量 `TIMEM_AGENT`。
 
 **自行构建 ZIP：** `bash scripts/build-release.sh` → `bash scripts/upload-cos.sh`
 
