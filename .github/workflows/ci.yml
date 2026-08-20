@@ -1,14 +1,104 @@
-name: Build & Upload Skill Packages
+name: Test, Package & Publish TiMEM Skills
+
 on:
   push:
     branches: [main]
-    paths: ['skills/**']
+    paths:
+      - '.github/workflows/ci.yml'
+      - 'skills/**'
+      - 'scripts/**'
+      - 'install-all.sh'
+      - 'install-all.ps1'
+      - 'README.md'
+      - 'README_zh.md'
+      - 'LICENSE'
+      - 'tests/**'
+  pull_request:
+    paths:
+      - '.github/workflows/ci.yml'
+      - 'skills/**'
+      - 'scripts/**'
+      - 'install-all.sh'
+      - 'install-all.ps1'
+      - 'README.md'
+      - 'README_zh.md'
+      - 'LICENSE'
+      - 'tests/**'
   workflow_dispatch:
+
 concurrency:
   group: skill-ci-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
-  build-and-upload:
+  test-installer:
+    name: Windows installer regression tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Pester 4
+        shell: pwsh
+        run: |
+          Install-Module Pester -RequiredVersion 4.10.1 -Scope CurrentUser -Force -SkipPublisherCheck
+          Import-Module Pester -RequiredVersion 4.10.1 -Force
+      - name: Run PowerShell installer tests
+        shell: powershell
+        run: Invoke-Pester -Script .\tests -EnableExit
+
+  build-packages:
+    name: Build and verify release artifacts
+    needs: test-installer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build standalone skill packages
+        run: |
+          set -euo pipefail
+          python scripts/build-all.py
+          for skill_dir in dist/standalone/*/; do
+            test -f "${skill_dir}SKILL.md"
+            skill_id=$(basename "${skill_dir}")
+            (cd dist/standalone && zip -qr "${skill_id}.zip" "${skill_id}")
+            unzip -t "dist/standalone/${skill_id}.zip" >/dev/null
+            unzip -l "dist/standalone/${skill_id}.zip" | grep -q "${skill_id}/SKILL.md"
+          done
+      - name: Build and verify full release ZIP
+        id: release
+        run: |
+          set -euo pipefail
+          version=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+          version="${version#v}"
+          bash scripts/build-release.sh --version "${version}"
+          release_zip="dist/release/timem-skill-${version}.zip"
+          test -f "${release_zip}"
+          unzip -t "${release_zip}" >/dev/null
+          unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.ps1'
+          unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.sh'
+          unzip -p "${release_zip}" timem-skill/install-all.ps1 | cmp -s install-all.ps1 -
+          cp "${release_zip}" dist/release/timem-skill-latest.zip
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: timem-skill-packages-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+
+  publish-to-cos:
+    name: Publish verified packages to COS
+    needs: build-packages
+    if: >-
+      ${{
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        github.event_name == 'workflow_dispatch'
+      }}
     runs-on: ubuntu-latest
     env:
       TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
@@ -16,21 +106,18 @@ jobs:
       TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
       TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
       COS_PREFIX: timem/skills/standalone
+      RELEASE_COS_PREFIX: releases
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
         with:
-          python-version: '3.11'
+          name: timem-skill-packages-${{ github.sha }}
+          path: dist
       - run: pip install cos-python-sdk-v5
-      - run: python scripts/build-all.py
-      - name: Package
-        run: |
-          for d in dist/standalone/*/; do
-            skill_id=$(basename "$d")
-            (cd dist/standalone && zip -r "${skill_id}.zip" "$skill_id")
-          done
-      - name: Upload
+      - name: Upload standalone and release packages
         run: |
           set -euo pipefail
-          [ -n "${TENCENT_SECRET_ID:-}" ] || { echo "SKIP: no COS creds"; exit 0; }
+          : "${TENCENT_SECRET_ID:?TENCENT_SECRET_ID secret is required}"
+          : "${TENCENT_SECRET_KEY:?TENCENT_SECRET_KEY secret is required}"
+          : "${TENCENT_COS_BUCKET:?TENCENT_COS_BUCKET secret is required}"
+          : "${TENCENT_COS_REGION:?TENCENT_COS_REGION secret is required}"
           python3 scripts/upload_cos.py

@@ -1,0 +1,6 @@
+# 发布脚本与 GitHub Actions 必须在 Windows checkout 中也保留 Unix 换行，
+# 否则 Git Bash 会把 CRLF 解释为命令内容，导致本地发布校验失败。
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
