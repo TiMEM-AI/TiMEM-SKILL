@@ -29,9 +29,7 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 - `create_memory(domain="general", session_id="personal"|<topic>, messages=[2–4 recent turns])`
 
-**Skip create** only for: pure mood / disposable chit-chat with no durable content ("今天有点累"); process-only narration with no conclusion; nothing new vs. what you just searched; user said not to store.
-
-More search ≠ more create judgment for you — the gate is only the narrow list above.
+**No skip.** Create every turn — the server extracts facts and dedups against history, so even seemingly trivial turns may hold durable context. Passing the raw turns is enough.
 
 ### session_id
 
@@ -69,23 +67,16 @@ Never omit; never use a random UUID per turn.
 
 ### Create workflow
 
-Gate hits only when reusable writing rules are confirmed.
+**No skip.** Create every turn — the server extracts facts and dedups against history.
 
-1. **Trigger** — user locks in reusable writing rules or preferences?
-2. **Summarize** — style/audience/tone in 1–3 sentences.
-3. **Call**:
+1. **Call**:
    ```
    create_memory(
      domain="writing",
      session_id="<series name if applicable>",
-     messages=[
-       {"role": "user", "content": "<constraint in user's words>"},
-       {"role": "assistant", "content": "<confirmation of stored style rule>"},
-     ],
+     messages=[2–4 recent turns],
    )
    ```
-
-More search ≠ more create.
 
 ### session_id guidance
 
@@ -97,7 +88,7 @@ More search ≠ more create.
 
 ### Task end
 
-At most **0–3** writing memories per task; prefer durable style rules over one-off phrasing.
+Create every turn; the server dedups, so prefer passing raw turns over manually gating.
 
 ## Coding domain
 

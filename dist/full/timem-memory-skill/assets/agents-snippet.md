@@ -22,7 +22,7 @@ One skill covers three domains: `coding`, `general`, `writing`. Pick domain by s
 
 - Default: call `search_memories` on every turn; more search ≠ more create
 - Use `search_memories` / `create_memory` / `delete_memory` only; always pass `domain` explicitly
-- Skip only for typo/format/trivia
+- Search: skip only for typo/format/trivia; Create: no skip, every turn
 - AGENTS.md = team conventions; TiMEM = decisions + preferences + orientation
 
 Canonical packages: `dist/standalone/timem-memory-skill/` (recommended) or `dist/full/timem-memory-skill/` (source: `skills/timem-memory-skill/`)

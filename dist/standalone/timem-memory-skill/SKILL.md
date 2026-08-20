@@ -113,6 +113,7 @@ Optional AGENTS.md paste template (human-facing, not required at runtime): in th
 
 ## Changelog
 
+- 0.3.0 (2026-08-20): Remove all create skip conditions — create every turn, no exceptions. Server dedup handles trivial turns. Search skip conditions retained (typo/trivia/别搜).
 - 0.2.0 (2026-08-19): Merge timem-coding-memory + timem-general-memory + timem-writing-memory into single skill `timem-memory-skill`. One skill, three domains, domain selection by scene.
 - 0.1.0 (2026-08-18): Initial individual skill versions (coding, general, writing).
 
@@ -228,9 +229,7 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 - `create_memory(domain="general", session_id="personal"|<topic>, messages=[2–4 recent turns])`
 
-**Skip create** only for: pure mood / disposable chit-chat with no durable content ("今天有点累"); process-only narration with no conclusion; nothing new vs. what you just searched; user said not to store.
-
-More search ≠ more create judgment for you — the gate is only the narrow list above.
+**No skip.** Create every turn — the server extracts facts and dedups against history, so even seemingly trivial turns may hold durable context. Passing the raw turns is enough.
 
 #### session_id
 
@@ -268,23 +267,16 @@ Never omit; never use a random UUID per turn.
 
 #### Create workflow
 
-Gate hits only when reusable writing rules are confirmed.
+**No skip.** Create every turn — the server extracts facts and dedups against history.
 
-1. **Trigger** — user locks in reusable writing rules or preferences?
-2. **Summarize** — style/audience/tone in 1–3 sentences.
-3. **Call**:
+1. **Call**:
    ```
    create_memory(
      domain="writing",
      session_id="<series name if applicable>",
-     messages=[
-       {"role": "user", "content": "<constraint in user's words>"},
-       {"role": "assistant", "content": "<confirmation of stored style rule>"},
-     ],
+     messages=[2–4 recent turns],
    )
    ```
-
-More search ≠ more create.
 
 #### session_id guidance
 
@@ -296,7 +288,7 @@ More search ≠ more create.
 
 #### Task end
 
-At most **0–3** writing memories per task; prefer durable style rules over one-off phrasing.
+Create every turn; the server dedups, so prefer passing raw turns over manually gating.
 
 ### Coding domain
 
@@ -348,9 +340,9 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 1. `search_memories(query_text="auth 架构 决策", domain="coding", session_id="timem-mcp", search_tier="S0", limit=10)`
 2. Answer from verified memories only → `create_memory` with this exchange
 
-#### Example 4 — Typo fix (skip both)
+#### Example 4 — Typo fix (skip search, still create)
 
-**User:** "这个变量名拼错了，改一下" → No search, no create.
+**User:** "这个变量名拼错了，改一下" → No search. Create after fix (the exchange may hold reusable convention).
 
 #### Example 5 — Task with a conclusion (search + create)
 
@@ -372,9 +364,9 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **Actions:** search (optional dedup) → answer → `create_memory(domain="general", session_id="personal", messages=[...])`.
 
-#### Example 3 — Trivia (skip both)
+#### Example 3 — Trivia (skip search, still create)
 
-**User:** "今天星期几？" → No search, no create.
+**User:** "今天星期几？" → No search. Create after answering (trivial but no skip policy).
 
 #### Example 4 — Scoped topic
 
@@ -388,9 +380,9 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **Actions:** Search `自我介绍 偏好 背景` (`session_id=personal`) → answer → create (the exchange may hold durable background).
 
-#### Example 6 — Pure mood (skip create)
+#### Example 6 — Pure mood (still create)
 
-**User:** "今天有点累，随便聊聊吧。" → Skip search. Skip create.
+**User:** "今天有点累，随便聊聊吧。" → Skip search. Still create after reply (no skip policy).
 
 ### Writing examples
 
@@ -418,22 +410,22 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 **Actions:**
 
 1. `search_memories(query_text="blog 风格 系列", domain="writing", session_id="blog-2026", limit=5)`
-2. Write draft; create only if new durable style rule emerges.
+2. Write draft → `create_memory` after draft (no skip).
 
-#### Example 4 — Draft without recall wording (search, no create)
+#### Example 4 — Draft without recall wording (search + create)
 
 **User:** "写一段产品介绍。"
 
 **Actions:**
 
 1. Default search → `search_memories(query_text="产品介绍 风格 受众", domain="writing", session_id="product-copy", limit=5)`
-2. Draft using verified constraints if any; **no create** unless a new durable rule is confirmed
+2. Draft using verified constraints if any → `create_memory` after draft (no skip)
 
-#### Example 5 — No memory needed
+#### Example 5 — One-off edit (still create)
 
-**User:** "把这段改成被动语态。" (one-off edit, no new style rule)
+**User:** "把这段改成被动语态。" (one-off edit)
 
-**Actions:** Edit text; skip search/create unless user asks to remember a rule.
+**Actions:** Edit text; still `create_memory` after edit (no skip policy).
 
 ## Coding Search Tier (full)
 
@@ -494,14 +486,11 @@ create_memory(
 )
 ```
 
-### Skip create (narrow only)
+### No skip
 
-- **Unverified guess** — you summarized without reading the code
-- **Transient debug state** — "breakpoint currently at L42", "server is running on port 3000 right now"
-- **Typo / single-line format / pure one-off patch** with no reusable content
-- Nothing new vs. what you just searched (true duplicate)
+Create every turn, no exceptions. The server extracts facts and dedups against history, so passing the raw turns is enough — even turns that seem trivial may hold durable context.
 
-Everything else → create. Do not hold back because "the user didn't say 请记住" or "AGENTS.md might cover this".
+Do not hold back because "the user didn't say 请记住" or "AGENTS.md might cover this".
 
 ### memory_hint (optional)
 

@@ -11,14 +11,11 @@ create_memory(
 )
 ```
 
-## Skip create (narrow only)
+## No skip
 
-- **Unverified guess** — you summarized without reading the code
-- **Transient debug state** — "breakpoint currently at L42", "server is running on port 3000 right now"
-- **Typo / single-line format / pure one-off patch** with no reusable content
-- Nothing new vs. what you just searched (true duplicate)
+Create every turn, no exceptions. The server extracts facts and dedups against history, so passing the raw turns is enough — even turns that seem trivial may hold durable context.
 
-Everything else → create. Do not hold back because "the user didn't say 请记住" or "AGENTS.md might cover this".
+Do not hold back because "the user didn't say 请记住" or "AGENTS.md might cover this".
 
 ## memory_hint (optional)
 

@@ -109,5 +109,6 @@ For business repos: [assets/agents-snippet.md](assets/agents-snippet.md)
 
 ## Changelog
 
+- 0.3.0 (2026-08-20): Remove all create skip conditions — create every turn, no exceptions. Server dedup handles trivial turns. Search skip conditions retained (typo/trivia/别搜).
 - 0.2.0 (2026-08-19): Merge timem-coding-memory + timem-general-memory + timem-writing-memory into single skill `timem-memory-skill`. One skill, three domains, domain selection by scene.
 - 0.1.0 (2026-08-18): Initial individual skill versions (coding, general, writing).

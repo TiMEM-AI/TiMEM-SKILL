@@ -31,9 +31,9 @@
 1. `search_memories(query_text="auth 架构 决策", domain="coding", session_id="timem-mcp", search_tier="S0", limit=10)`
 2. Answer from verified memories only → `create_memory` with this exchange
 
-### Example 4 — Typo fix (skip both)
+### Example 4 — Typo fix (skip search, still create)
 
-**User:** "这个变量名拼错了，改一下" → No search, no create.
+**User:** "这个变量名拼错了，改一下" → No search. Create after fix (the exchange may hold reusable convention).
 
 ### Example 5 — Task with a conclusion (search + create)
 
@@ -55,9 +55,9 @@
 
 **Actions:** search (optional dedup) → answer → `create_memory(domain="general", session_id="personal", messages=[...])`.
 
-### Example 3 — Trivia (skip both)
+### Example 3 — Trivia (skip search, still create)
 
-**User:** "今天星期几？" → No search, no create.
+**User:** "今天星期几？" → No search. Create after answering (trivial but no skip policy).
 
 ### Example 4 — Scoped topic
 
@@ -71,9 +71,9 @@
 
 **Actions:** Search `自我介绍 偏好 背景` (`session_id=personal`) → answer → create (the exchange may hold durable background).
 
-### Example 6 — Pure mood (skip create)
+### Example 6 — Pure mood (still create)
 
-**User:** "今天有点累，随便聊聊吧。" → Skip search. Skip create.
+**User:** "今天有点累，随便聊聊吧。" → Skip search. Still create after reply (no skip policy).
 
 ## Writing examples
 
@@ -101,19 +101,19 @@
 **Actions:**
 
 1. `search_memories(query_text="blog 风格 系列", domain="writing", session_id="blog-2026", limit=5)`
-2. Write draft; create only if new durable style rule emerges.
+2. Write draft → `create_memory` after draft (no skip).
 
-### Example 4 — Draft without recall wording (search, no create)
+### Example 4 — Draft without recall wording (search + create)
 
 **User:** "写一段产品介绍。"
 
 **Actions:**
 
 1. Default search → `search_memories(query_text="产品介绍 风格 受众", domain="writing", session_id="product-copy", limit=5)`
-2. Draft using verified constraints if any; **no create** unless a new durable rule is confirmed
+2. Draft using verified constraints if any → `create_memory` after draft (no skip)
 
-### Example 5 — No memory needed
+### Example 5 — One-off edit (still create)
 
-**User:** "把这段改成被动语态。" (one-off edit, no new style rule)
+**User:** "把这段改成被动语态。" (one-off edit)
 
-**Actions:** Edit text; skip search/create unless user asks to remember a rule.
+**Actions:** Edit text; still `create_memory` after edit (no skip policy).
