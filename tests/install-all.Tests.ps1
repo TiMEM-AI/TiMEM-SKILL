@@ -33,4 +33,14 @@ if (`$errors.Count -gt 0) {
     & $windowsPowerShell.Source -NoProfile -NonInteractive -EncodedCommand $encodedCommand 2>&1 | Out-Null
     $LASTEXITCODE | Should Be 0
   }
+
+  It 'has no parser errors when invoked directly by Windows PowerShell 5.1' {
+    $windowsPowerShell = Get-Command powershell.exe -ErrorAction SilentlyContinue
+    if (-not $windowsPowerShell) { return }
+
+    $scriptPath = Join-Path $PSScriptRoot '..' 'install-all.ps1'
+    $output = & $windowsPowerShell.Source -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $scriptPath 2>&1 | Out-String
+
+    ($output -match 'ParserError|Try statement is missing|Missing closing|Unexpected token') | Should Be $false
+  }
 }

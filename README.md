@@ -26,7 +26,7 @@ unzip timem-skill.zip
 cd timem-skill && bash install-all.sh --api-key YOUR_TIMEM_API_KEY
 ```
 
-> **Windows (PowerShell):** Download and unzip, then run `.\install-all.ps1 -ApiKey YOUR_TIMEM_API_KEY`
+> **Windows (PowerShell):** Download and unzip, then run `.\install-all.ps1 -ApiKey YOUR_TIMEM_API_KEY -Agent codex`; `-Agent` accepts comma-separated agents, and `TIMEM_AGENT` remains supported.
 
 **Build your own ZIP:** `bash scripts/build-release.sh` → `bash scripts/upload-cos.sh`
 
