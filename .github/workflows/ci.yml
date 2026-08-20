@@ -112,6 +112,7 @@ jobs:
       COS_PREFIX: timem/skills/standalone
       RELEASE_COS_PREFIX: releases
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: timem-skill-packages-${{ github.sha }}

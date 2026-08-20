@@ -24,5 +24,7 @@ Describe 'COS release workflow' {
     $uploadScript | Should Match 'RELEASE_COS_PREFIX'
     $uploadScript | Should Match 'timem-skill-latest\.zip'
     $uploadScript | Should Match 'EnableMD5=True'
+    $publishJob = $workflow.Substring($workflow.IndexOf('publish-to-cos:'))
+    $publishJob | Should Match 'actions/checkout@v4'
   }
 }
