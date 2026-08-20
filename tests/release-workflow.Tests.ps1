@@ -1,7 +1,7 @@
 Describe 'COS release workflow' {
   $root = Join-Path $PSScriptRoot '..'
-  $workflow = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $root '.github' 'workflows' 'ci.yml')
-  $uploadScript = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $root 'scripts' 'upload_cos.py')
+  $workflow = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path (Join-Path (Join-Path $root '.github') 'workflows') 'ci.yml')
+  $uploadScript = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path (Join-Path $root 'scripts') 'upload_cos.py')
 
   It 'runs Windows installer tests before the COS publishing job' {
     $workflow | Should Match 'test-installer:'

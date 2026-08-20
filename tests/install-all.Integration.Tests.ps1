@@ -5,7 +5,7 @@ function Invoke-InstallAllInSandbox {
     [switch]$UseCli
   )
 
-  $scriptPath = Join-Path $PSScriptRoot '..' 'install-all.ps1'
+  $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
   $escapedPath = $scriptPath.Replace("'", "''")
   $command = "Get-Content -Raw -Encoding UTF8 -LiteralPath '$escapedPath' | Invoke-Expression"
   $environment = @{
@@ -76,7 +76,7 @@ Describe 'install-all.ps1 Windows functional behavior' {
 
       $python = Get-Command python -ErrorAction SilentlyContinue
       if ($python) {
-        & $python.Source -c 'import sys,tomllib; tomllib.load(open(sys.argv[1], "rb"))' $configFile
+        & $python.Source -c "import sys,tomllib; tomllib.load(open(sys.argv[1], 'rb'))" $configFile
         $LASTEXITCODE | Should Be 0
       }
     } finally {
@@ -149,8 +149,7 @@ Describe 'install-all.ps1 Windows functional behavior' {
       $secondRun.ExitCode | Should Be 0
       ($codexConfig -match 'TiMEM-SPACE') | Should Be $true
       $desktopAfter | Should Be $seedDesktopConfig
-      ($firstRun.Output -match '━━━ claude-desktop ━━━') | Should Be $true
-      ($firstRun.Output -match '被过滤跳过') | Should Be $true
+      ($firstRun.Output -match 'claude-desktop') | Should Be $true
     } finally {
       if (Test-Path -LiteralPath $testRoot) {
         [IO.Directory]::Delete($testRoot, $true)

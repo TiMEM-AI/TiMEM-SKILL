@@ -40,7 +40,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install Pester 3
-        shell: pwsh
+        shell: powershell
         run: |
           # The regression suite deliberately supports Windows PowerShell 5.1
           # and uses the compatible Pester 3 assertion syntax.
@@ -48,7 +48,9 @@ jobs:
           Import-Module Pester -RequiredVersion 3.4.0 -Force
       - name: Run PowerShell installer tests
         shell: powershell
-        run: Invoke-Pester -Script .\tests -EnableExit
+        run: |
+          Import-Module Pester -RequiredVersion 3.4.0 -Force
+          Invoke-Pester -Script .\tests -EnableExit
 
   build-packages:
     name: Build and verify release artifacts

@@ -1,6 +1,6 @@
 Describe 'install-all.ps1' {
   It 'has no PowerShell parser errors' {
-    $scriptPath = Join-Path $PSScriptRoot '..' 'install-all.ps1'
+    $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
     $tokens = $null
     $errors = $null
 
@@ -17,7 +17,7 @@ Describe 'install-all.ps1' {
     $windowsPowerShell = Get-Command powershell.exe -ErrorAction SilentlyContinue
     if (-not $windowsPowerShell) { return }
 
-    $scriptPath = Join-Path $PSScriptRoot '..' 'install-all.ps1'
+    $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
     $escapedPath = $scriptPath.Replace("'", "''")
     $command = @"
 `$source = Get-Content -Raw -Encoding UTF8 -LiteralPath '$escapedPath'
@@ -38,7 +38,7 @@ if (`$errors.Count -gt 0) {
     $windowsPowerShell = Get-Command powershell.exe -ErrorAction SilentlyContinue
     if (-not $windowsPowerShell) { return }
 
-    $scriptPath = Join-Path $PSScriptRoot '..' 'install-all.ps1'
+    $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
     $output = & $windowsPowerShell.Source -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $scriptPath 2>&1 | Out-String
 
     ($output -match 'ParserError|Try statement is missing|Missing closing|Unexpected token') | Should Be $false
