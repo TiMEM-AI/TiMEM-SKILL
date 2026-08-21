@@ -21,9 +21,9 @@ jobs:
         with:
           github-server-url: https://git.aigility.cloud
           fetch-depth: 1
-      - uses: https://gitee.com/github-actions/setup-python@v4
-        with:
-          python-version: '3.11'
+      # - uses: https://gitee.com/github-actions/setup-python@v4
+      #   with:
+      #     python-version: '3.11'
       - run: pip install cos-python-sdk-v5
       - run: python scripts/build-all.py
       - name: Package
