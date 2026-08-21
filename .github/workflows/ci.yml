@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build-and-upload:
-    runs-on: ubuntu-latest
+    runs-on: runner-debian-13
     env:
       TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
       TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
@@ -17,8 +17,11 @@ jobs:
       TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
       COS_PREFIX: timem/skills/standalone
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: https://gitee.com/github-actions/checkout@v4
+        with:
+          github-server-url: https://git.aigility.cloud
+          fetch-depth: 1
+      - uses: https://gitee.com/github-actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: pip install cos-python-sdk-v5
