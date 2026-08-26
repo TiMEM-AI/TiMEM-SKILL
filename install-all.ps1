@@ -2,16 +2,18 @@
 .SYNOPSIS
   TiMEM Skill 一键安装 (Windows PowerShell 版)
 .DESCRIPTION
-  为所有已检测的 Agent 工具安装 TiMEM Skills + MCP 配置
+  为所有已检测的 Agent 工具安装 TiMEM Skills + MCP 配置 + 全局指令
 .USAGE
   $env:TIMEM_API_KEY = "tmk_xxx"; irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1 | iex
   .\install-all.ps1 -ApiKey "tmk_xxx" -Agent "codex"
+  .\install-all.ps1 -ApiKey "tmk_xxx" -Agent "codex" -SkipAgentInstructions
 #>
 
 param(
   [string]$ApiKey,
   [Alias('Agent')]
-  [string]$AgentSelection
+  [string]$AgentSelection,
+  [switch]$SkipAgentInstructions
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,6 +26,28 @@ $TIMEM_MCP_REPO = "https://github.com/TiMEM-AI/timem-mcp"
 $TIMEM_CLOUD_URL = "https://api.space.timem.cloud/mcp/"
 $TIMEM_API_HOST_DEFAULT = "https://api.space.timem.cloud"
 $TIMEM_SERVER_NAME = "TiMEM-SPACE"
+$TIMEM_AGENT_INSTRUCTION = "每次对话都要查看timem-memory的skill，并调用TiMEM-SPACE中合适的接口进行正确的记忆传输流程"
+$TIMEM_INSTRUCTION_MARKERS = @("TiMEM-SPACE", "太忆空间", "timem-memory")
+$CODEX_CONFIG_PATH = if ([string]::IsNullOrWhiteSpace($env:CODEX_HOME)) { "$env:USERPROFILE\.codex" } else { $env:CODEX_HOME }
+$QODER_CONFIG_PATH = if ([string]::IsNullOrWhiteSpace($env:QODER_CONFIG_DIR)) { "$env:USERPROFILE\.qoder" } else { $env:QODER_CONFIG_DIR }
+$HERMES_CONFIG_PATH = if ([string]::IsNullOrWhiteSpace($env:HERMES_HOME)) { "$env:USERPROFILE\.hermes" } else { $env:HERMES_HOME }
+$TRAE_MCP_CONFIG_PATH = [string]$env:TRAE_MCP_CONFIG
+if ([string]::IsNullOrWhiteSpace($TRAE_MCP_CONFIG_PATH)) {
+  $traeMcpCandidates = @()
+  if (-not [string]::IsNullOrWhiteSpace($env:APPDATA)) {
+    $traeMcpCandidates += (Join-Path $env:APPDATA 'Trae\User\mcp.json')
+    $traeMcpCandidates += (Join-Path $env:APPDATA 'TRAE SOLO CN\User\mcp.json')
+    $traeMcpCandidates += (Join-Path $env:APPDATA 'TRAE SOLO\User\mcp.json')
+  }
+  $traeMcpCandidates += (Join-Path $env:USERPROFILE '.trae\mcp.json')
+  $TRAE_MCP_CONFIG_PATH = $traeMcpCandidates |
+    Where-Object { Test-Path -LiteralPath $_ } |
+    Select-Object -First 1
+  if ([string]::IsNullOrWhiteSpace($TRAE_MCP_CONFIG_PATH)) {
+    $TRAE_MCP_CONFIG_PATH = $traeMcpCandidates[0]
+  }
+}
+$TRAE_CONFIG_PATH = Split-Path -Path $TRAE_MCP_CONFIG_PATH -Parent
 
 $ALL_SKILLS = @(
   @{name="timem-coding-memory"; path="dist/standalone/timem-coding-memory"}
@@ -33,13 +57,14 @@ $ALL_SKILLS = @(
 
 # Agent 矩阵
 $AGENTS = @(
-  @{name="claude-code"; detect="claude"; configDir="$env:USERPROFILE\.claude"; skillsDir="$env:USERPROFILE\.claude\skills"; configFile="$env:USERPROFILE\.claude\settings.json"; format="json"; rootKey="mcpServers"; hasSkills=$true}
-  @{name="codex"; detect="codex"; configDir="$env:USERPROFILE\.codex"; skillsDir="$env:USERPROFILE\.codex\skills"; configFile="$env:USERPROFILE\.codex\config.toml"; format="toml"; rootKey="mcp_servers"; hasSkills=$true}
-  @{name="cursor"; detect="cursor"; configDir="$env:USERPROFILE\.cursor"; skillsDir="$env:USERPROFILE\.cursor\skills"; configFile="$env:USERPROFILE\.cursor\mcp.json"; format="json"; rootKey="mcpServers"; hasSkills=$true}
-  @{name="openclaw"; detect="openclaw"; configDir="$env:USERPROFILE\.openclaw"; skillsDir="$env:USERPROFILE\.openclaw\skills"; configFile="$env:USERPROFILE\.openclaw\openclaw.json"; format="json"; rootKey="mcp.servers"; hasSkills=$true}
-  @{name="hermes"; detect="hermes"; configDir="$env:USERPROFILE\.hermes"; skillsDir="$env:USERPROFILE\.hermes\skills"; configFile="$env:USERPROFILE\.hermes\config.yaml"; format="yaml"; rootKey="mcp_servers"; hasSkills=$true}
-  @{name="trae"; detect="trae"; configDir="$env:USERPROFILE\.trae"; skillsDir="$env:USERPROFILE\.trae\skills"; configFile="$env:USERPROFILE\.trae\mcp.json"; format="json"; rootKey="mcpServers"; hasSkills=$true}
-  @{name="workbuddy"; detect="workbuddy"; configDir="$env:USERPROFILE\.workbuddy"; skillsDir="$env:USERPROFILE\.workbuddy\skills"; configFile="$env:USERPROFILE\.workbuddy\.mcp.json"; format="json"; rootKey="mcpServers"; hasSkills=$true}
+  @{name="claude-code"; detect="claude"; configDir="$env:USERPROFILE\.claude"; skillsDir="$env:USERPROFILE\.claude\skills"; configFile="$env:USERPROFILE\.claude.json"; format="json"; rootKey="mcpServers"; hasSkills=$true; instructionFile="CLAUDE.md"}
+  @{name="codex"; detect="codex"; configDir=$CODEX_CONFIG_PATH; skillsDir=(Join-Path $CODEX_CONFIG_PATH 'skills'); configFile=(Join-Path $CODEX_CONFIG_PATH 'config.toml'); format="toml"; rootKey="mcp_servers"; hasSkills=$true; instructionFile="AGENTS.md"}
+  @{name="cursor"; detect="cursor"; configDir="$env:USERPROFILE\.cursor"; skillsDir="$env:USERPROFILE\.cursor\skills"; configFile="$env:USERPROFILE\.cursor\mcp.json"; format="json"; rootKey="mcpServers"; hasSkills=$true; instructionFile="timem-memory.mdc"; instructionScope="cursor-user-rules"}
+  @{name="openclaw"; detect="openclaw"; configDir="$env:USERPROFILE\.openclaw"; skillsDir="$env:USERPROFILE\.openclaw\skills"; configFile="$env:USERPROFILE\.openclaw\openclaw.json"; format="json"; rootKey="mcp.servers"; hasSkills=$true; instructionFile="AGENTS.md"; instructionScope="openclaw-workspaces"}
+  @{name="hermes"; detect="hermes"; configDir=$HERMES_CONFIG_PATH; skillsDir=(Join-Path $HERMES_CONFIG_PATH 'skills'); configFile=(Join-Path $HERMES_CONFIG_PATH 'config.yaml'); format="yaml"; rootKey="mcp_servers"; hasSkills=$true; instructionFile="SOUL.md"; instructionCreateIfMissing=$false}
+  @{name="trae"; detect="trae"; configDir=$TRAE_CONFIG_PATH; detectDirs=@($TRAE_CONFIG_PATH, "$env:USERPROFILE\.trae"); skillsDir="$env:USERPROFILE\.trae\skills"; configFile=$TRAE_MCP_CONFIG_PATH; format="json"; rootKey="mcpServers"; hasSkills=$true; instructionFile="timem-memory.md"; instructionScope="trae-user-rules"}
+  @{name="workbuddy"; detect="workbuddy"; configDir="$env:USERPROFILE\.workbuddy"; skillsDir="$env:USERPROFILE\.workbuddy\skills"; configFile="$env:USERPROFILE\.workbuddy\.mcp.json"; format="json"; rootKey="mcpServers"; hasSkills=$true; instructionFile="SOUL.md"; instructionCreateIfMissing=$false}
+  @{name="qoder"; detect="qoder"; configDir=$QODER_CONFIG_PATH; skillsDir=(Join-Path $QODER_CONFIG_PATH 'skills'); configFile=(Join-Path $QODER_CONFIG_PATH 'settings.json'); format="json"; rootKey="mcpServers"; hasSkills=$true; instructionFile="AGENTS.md"}
 )
 
 # Claude Desktop
@@ -50,6 +75,7 @@ $SILENT_MODE = $false
 $AGENT_FILTER = if ($AgentSelection) { $AgentSelection } else { $env:TIMEM_AGENT }
 $AGENT_FILTER_VALUES = @()
 $SKILLS_FILTER = ""
+$SKIP_AGENT_INSTRUCTIONS = $SkipAgentInstructions.IsPresent
 
 # ============================================================================
 # 日志函数
@@ -101,30 +127,16 @@ function Remove-TomlTables($content, $tableName) {
   return ($keptLines -join [Environment]::NewLine).TrimEnd()
 }
 
-function ConvertTo-Hashtable($value) {
-  if ($null -eq $value) { return $null }
-
-  if ($value -is [System.Collections.IDictionary]) {
-    $table = @{}
-    foreach ($key in $value.Keys) {
-      $table[$key] = ConvertTo-Hashtable $value[$key]
-    }
-    return $table
+function Read-JsonObject([string]$rawConfig) {
+  if ($PSVersionTable.PSVersion.Major -ge 6) {
+    return ConvertFrom-Json -InputObject $rawConfig -AsHashtable
   }
 
-  if ($value -is [pscustomobject]) {
-    $table = @{}
-    foreach ($property in $value.PSObject.Properties) {
-      $table[$property.Name] = ConvertTo-Hashtable $property.Value
-    }
-    return $table
-  }
-
-  if ($value -is [System.Collections.IEnumerable] -and -not ($value -is [string])) {
-    return @($value | ForEach-Object { ConvertTo-Hashtable $_ })
-  }
-
-  return $value
+  # Windows PowerShell 5.1 的 PSCustomObject 不能读取仅大小写不同的 JSON 键。
+  # Claude Code 的 ~/.claude.json 可能含这类项目路径键，改用大小写敏感的字典。
+  Add-Type -AssemblyName System.Web.Extensions
+  $serializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+  return $serializer.DeserializeObject($rawConfig)
 }
 
 function Get-YamlTopLevelBlockEnd($lines, $startIndex) {
@@ -166,6 +178,13 @@ function Detect-Agent($agent) {
   $cmd = Get-Command $agent.detect -ErrorAction SilentlyContinue
   if ($cmd) { return $true }
   if (Test-Path $agent.configDir) { return $true }
+  if ($agent -is [System.Collections.IDictionary] -and $agent.ContainsKey("detectDirs")) {
+    foreach ($directory in @($agent["detectDirs"])) {
+      if (-not [string]::IsNullOrWhiteSpace([string]$directory) -and (Test-Path -LiteralPath $directory)) {
+        return $true
+      }
+    }
+  }
   return $false
 }
 
@@ -226,6 +245,271 @@ function Install-Skills($agent, $skillDir) {
 }
 
 # ============================================================================
+# 全局 / 工作区 Agent 指令注入
+# ============================================================================
+function ConvertFrom-OpenClawWorkspacePath([string]$workspacePath, [string]$configDir) {
+  $candidate = $workspacePath.Trim()
+  if ($candidate -eq "~" -or $candidate.StartsWith("~/") -or $candidate.StartsWith("~\")) {
+    $relativePath = $candidate.Substring(1).TrimStart([char[]]@('\', '/'))
+    if ([string]::IsNullOrWhiteSpace($relativePath)) {
+      return $env:USERPROFILE
+    }
+    return Join-Path $env:USERPROFILE $relativePath
+  }
+  if ([IO.Path]::IsPathRooted($candidate)) {
+    return $candidate
+  }
+  return Join-Path $configDir $candidate
+}
+
+function Get-OpenClawInstructionDirectories($agent) {
+  $configDir = [string]$agent.configDir
+  $openClawConfig = $null
+  if (Test-Path -LiteralPath $agent.configFile) {
+    try {
+      $rawConfig = [IO.File]::ReadAllText($agent.configFile)
+      if (-not [string]::IsNullOrWhiteSpace($rawConfig)) {
+        $openClawConfig = ConvertFrom-Json -InputObject $rawConfig
+      }
+    } catch {
+      Warn "OpenClaw workspace 配置解析失败，将使用默认路径: $_"
+    }
+  }
+
+  $agentsConfig = if ($null -ne $openClawConfig) { $openClawConfig.agents } else { $null }
+  $workspaceSetting = [string]$env:OPENCLAW_WORKSPACE_DIR
+  if ([string]::IsNullOrWhiteSpace($workspaceSetting) -and $null -ne $agentsConfig -and $null -ne $agentsConfig.defaults) {
+    $workspaceSetting = [string]$agentsConfig.defaults.workspace
+  }
+
+  if ([string]::IsNullOrWhiteSpace($workspaceSetting)) {
+    $profileName = [string]$env:OPENCLAW_PROFILE
+    $workspaceName = if ([string]::IsNullOrWhiteSpace($profileName) -or $profileName -ieq "default") { "workspace" } else { "workspace-" + $profileName }
+    $defaultWorkspace = Join-Path $configDir $workspaceName
+  } else {
+    $defaultWorkspace = ConvertFrom-OpenClawWorkspacePath $workspaceSetting $configDir
+  }
+
+  $directories = New-Object System.Collections.Generic.List[string]
+  [void]$directories.Add($defaultWorkspace)
+  $agentEntries = @()
+  if ($null -ne $agentsConfig) {
+    if ($null -ne $agentsConfig.list) {
+      $agentEntries += @($agentsConfig.list)
+    }
+    if ($null -ne $agentsConfig.entries) {
+      foreach ($property in $agentsConfig.entries.PSObject.Properties) {
+        $agentEntries += [pscustomobject]@{
+          id = $property.Name
+          workspace = [string]$property.Value.workspace
+        }
+      }
+    }
+  }
+
+  foreach ($entry in $agentEntries) {
+    if ($null -eq $entry) { continue }
+    $agentId = [string]$entry.id
+    if ([string]::IsNullOrWhiteSpace($agentId)) {
+      $agentId = [string]$entry.name
+    }
+    $entryWorkspace = [string]$entry.workspace
+    if ([string]::IsNullOrWhiteSpace($entryWorkspace)) {
+      if ([string]::IsNullOrWhiteSpace($agentId) -or $agentId -ieq "main" -or $agentId -ieq "default") {
+        continue
+      }
+      $resolvedWorkspace = Join-Path $configDir ("workspace-" + $agentId)
+    } else {
+      $resolvedWorkspace = ConvertFrom-OpenClawWorkspacePath $entryWorkspace $configDir
+    }
+    if ($directories -notcontains $resolvedWorkspace) {
+      [void]$directories.Add($resolvedWorkspace)
+    }
+  }
+
+  return $directories.ToArray()
+}
+
+function Get-AgentInstructionDirectories($agent) {
+  if ([string]$agent.instructionScope -eq "openclaw-workspaces") {
+    return @(Get-OpenClawInstructionDirectories $agent)
+  }
+  return @([string]$agent.configDir)
+}
+
+function New-CursorUserRuleContent {
+  return (@(
+    "---"
+    'description: "TiMEM memory workflow"'
+    "alwaysApply: true"
+    "---"
+    ""
+    $TIMEM_AGENT_INSTRUCTION
+    ""
+  ) -join "`n")
+}
+
+function Ensure-CursorUserRule($agent) {
+  $rulesDirectory = Join-Path ([string]$agent.configDir) "rules"
+  $instructionPath = Join-Path $rulesDirectory "timem-memory.mdc"
+
+  try {
+    if (Test-Path -LiteralPath $instructionPath -PathType Container) {
+      throw "Cursor User Rule 路径不是文件: $instructionPath"
+    }
+
+    $existingContent = if (Test-Path -LiteralPath $instructionPath) { [IO.File]::ReadAllText($instructionPath) } else { "" }
+    foreach ($marker in $TIMEM_INSTRUCTION_MARKERS) {
+      if ($existingContent.IndexOf($marker, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        Info "Cursor User Rule 已包含 TiMEM 标记: $instructionPath"
+        return $true
+      }
+    }
+
+    if ([string]::IsNullOrEmpty($existingContent)) {
+      $updatedContent = New-CursorUserRuleContent
+    } else {
+      $newLine = if ($existingContent.Contains("`r`n")) { "`r`n" } else { "`n" }
+      $updatedContent = if ($existingContent.EndsWith("`n")) {
+        $existingContent + $TIMEM_AGENT_INSTRUCTION + $newLine
+      } else {
+        $existingContent + $newLine + $TIMEM_AGENT_INSTRUCTION + $newLine
+      }
+    }
+
+    Write-Utf8NoBom $instructionPath $updatedContent
+    Success "Cursor User Rule 已注入: $instructionPath"
+    return $true
+  } catch {
+    Err "Cursor User Rule 注入失败 ($($agent.name)): $_"
+    return $false
+  }
+}
+
+function Ensure-TraeUserRule($agent) {
+  $rulesDirectory = Join-Path (Join-Path $env:USERPROFILE ".trae") "user_rules"
+  $instructionPath = Join-Path $rulesDirectory "timem-memory.md"
+
+  try {
+    if (Test-Path -LiteralPath $instructionPath -PathType Container) {
+      throw "TRAE Global Rule 路径不是文件: $instructionPath"
+    }
+
+    $existingContent = if (Test-Path -LiteralPath $instructionPath) { [IO.File]::ReadAllText($instructionPath) } else { "" }
+    foreach ($marker in $TIMEM_INSTRUCTION_MARKERS) {
+      if ($existingContent.IndexOf($marker, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        Info "TRAE Global Rule 已包含 TiMEM 标记: $instructionPath"
+        return $true
+      }
+    }
+
+    $newLine = if ($existingContent.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $updatedContent = if ([string]::IsNullOrEmpty($existingContent)) {
+      (@(
+        "---"
+        "alwaysApply: true"
+        "---"
+        ""
+        $TIMEM_AGENT_INSTRUCTION
+        ""
+      ) -join "`n")
+    } elseif ($existingContent.EndsWith("`n")) {
+      $existingContent + $TIMEM_AGENT_INSTRUCTION + $newLine
+    } else {
+      $existingContent + $newLine + $TIMEM_AGENT_INSTRUCTION + $newLine
+    }
+
+    Write-Utf8NoBom $instructionPath $updatedContent
+    Success "TRAE Global Rule 已注入: $instructionPath"
+    return $true
+  } catch {
+    Err "TRAE Global Rule 注入失败 ($($agent.name)): $_"
+    return $false
+  }
+}
+
+function Ensure-AgentInstruction($agent) {
+  if ($SKIP_AGENT_INSTRUCTIONS) {
+    Info "已跳过 Agent 指令注入"
+    return $true
+  }
+
+  if ([string]$agent.instructionScope -eq "cursor-user-rules") {
+    return Ensure-CursorUserRule $agent
+  }
+  if ([string]$agent.instructionScope -eq "trae-user-rules") {
+    return Ensure-TraeUserRule $agent
+  }
+
+  $instructionFileName = [string]$agent.instructionFile
+  if ([string]::IsNullOrWhiteSpace($instructionFileName)) {
+    Info "未配置 Agent 指令文件 (跳过)"
+    return $true
+  }
+
+  try {
+    $instructionDirectories = @(Get-AgentInstructionDirectories $agent)
+    if ($instructionDirectories.Count -eq 0) {
+      Info "未解析到 Agent 指令目录 (跳过)"
+      return $true
+    }
+    foreach ($instructionDirectory in $instructionDirectories) {
+    $candidateNames = switch ($instructionFileName.ToUpperInvariant()) {
+      "AGENTS.MD" { @("AGENTS.md", "AGENT.md") }
+      "CLAUDE.MD" { @("CLAUDE.md") }
+      default { @($instructionFileName) }
+    }
+    $availableFiles = @(Get-ChildItem -LiteralPath $instructionDirectory -File -ErrorAction SilentlyContinue)
+    $existingFile = $null
+    foreach ($candidateName in $candidateNames) {
+      $existingFile = $availableFiles |
+        Where-Object { $_.Name -ieq $candidateName } |
+        Select-Object -First 1
+      if ($existingFile) { break }
+    }
+    $instructionPath = if ($existingFile) { $existingFile.FullName } else { Join-Path $instructionDirectory $instructionFileName }
+    $createInstructionFile = -not (
+      $agent -is [System.Collections.IDictionary] -and
+      $agent.ContainsKey("instructionCreateIfMissing") -and
+      -not [bool]$agent["instructionCreateIfMissing"]
+    )
+    if (-not $createInstructionFile -and -not (Test-Path -LiteralPath $instructionPath -PathType Leaf)) {
+      Info "Agent 指令文件不存在，保留默认行为 (跳过): $instructionPath"
+      continue
+    }
+    New-Item -ItemType Directory -Path $instructionDirectory -Force | Out-Null
+    $existingContent = if (Test-Path -LiteralPath $instructionPath) { [IO.File]::ReadAllText($instructionPath) } else { "" }
+
+    $hasTiMEMMarker = $false
+    foreach ($marker in $TIMEM_INSTRUCTION_MARKERS) {
+      if ($existingContent.IndexOf($marker, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        Info "Agent 指令已包含 TiMEM 标记: $instructionPath"
+        $hasTiMEMMarker = $true
+        break
+      }
+    }
+    if ($hasTiMEMMarker) { continue }
+
+    $newLine = if ($existingContent.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $updatedContent = if ([string]::IsNullOrEmpty($existingContent)) {
+      $TIMEM_AGENT_INSTRUCTION + $newLine
+    } elseif ($existingContent.EndsWith("`n")) {
+      $existingContent + $TIMEM_AGENT_INSTRUCTION + $newLine
+    } else {
+      $existingContent + $newLine + $TIMEM_AGENT_INSTRUCTION + $newLine
+    }
+
+    Write-Utf8NoBom $instructionPath $updatedContent
+    Success "Agent 指令已注入: $instructionPath"
+    }
+    return $true
+  } catch {
+    Err "Agent 指令注入失败 ($($agent.name)): $_"
+    return $false
+  }
+}
+
+# ============================================================================
 # MCP 配置 (JSON)
 # ============================================================================
 function Merge-McpJson($configFile, $agentName, $rootKey) {
@@ -241,7 +525,7 @@ function Merge-McpJson($configFile, $agentName, $rootKey) {
   if (Test-Path $configFile) {
     $rawConfig = [IO.File]::ReadAllText($configFile)
     if (-not [string]::IsNullOrWhiteSpace($rawConfig)) {
-      $config = ConvertTo-Hashtable (ConvertFrom-Json -InputObject $rawConfig)
+      $config = Read-JsonObject $rawConfig
     }
   }
   if (-not ($config -is [System.Collections.IDictionary])) {
@@ -275,7 +559,7 @@ function Merge-McpJson($configFile, $agentName, $rootKey) {
   }
   $servers[$serverName] = $serverConfig
 
-  $jsonContent = $config | ConvertTo-Json -Depth 10
+  $jsonContent = $config | ConvertTo-Json -Depth 100
   Write-Utf8NoBom $configFile $jsonContent
   Success "MCP 配置已写入: $configFile"
 }
@@ -480,6 +764,7 @@ function Confirm-Install {
   $skillSummary = if ($SKILLS_FILTER) { $SKILLS_FILTER } else { "全部 ($($ALL_SKILLS.Count)个)" }
   Write-Host "  Skills: $skillSummary"
   Write-Host "  MCP:    Cloud HTTP"
+  Write-Host "  Agent 指令: $(if ($SKIP_AGENT_INSTRUCTIONS) {'跳过'} else {'注入已支持的 agent'})"
   $keyDisplay = if ($API_KEY) { "$($API_KEY.Substring(0,4))...$($API_KEY.Substring($API_KEY.Length-4))" } else { "未设置" }
   Write-Host "  API Key: $keyDisplay"
   Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -552,7 +837,18 @@ foreach ($agent in $AGENTS) {
     "yaml" { Merge-McpYaml $agent.configFile $agent.name }
   }
 
-  $results += @{name=$agent.name; status="OK"}
+  $instructionDetail = if ([string]::IsNullOrWhiteSpace([string]$agent.instructionFile)) {
+    "skills+MCP"
+  } elseif ($SKIP_AGENT_INSTRUCTIONS) {
+    "skills+MCP (agent instructions skipped)"
+  } else {
+    "skills+MCP+instructions"
+  }
+  if (Ensure-AgentInstruction $agent) {
+    $results += @{name=$agent.name; status="OK"; detail=$instructionDetail}
+  } else {
+    $results += @{name=$agent.name; status="FAIL"; detail="Agent instruction update failed"}
+  }
 }
 
 # Claude Desktop
@@ -577,10 +873,11 @@ Write-Host "║  安装摘要                                                   
 Write-Host "╚══════════════════════════════════════════════════════════════╝"
 Write-Host ""
 foreach ($r in $results) {
+  $detailSuffix = if ($r.detail) { "  ($($r.detail))" } else { "" }
   switch ($r.status) {
-    "OK" { Write-Host "  [OK]   $($r.name)" -ForegroundColor Green }
-    "FAIL" { Write-Host "  [FAIL] $($r.name)" -ForegroundColor Red }
-    "SKIP" { Write-Host "  [SKIP] $($r.name)" -ForegroundColor Yellow }
+    "OK" { Write-Host "  [OK]   $($r.name)$detailSuffix" -ForegroundColor Green }
+    "FAIL" { Write-Host "  [FAIL] $($r.name)$detailSuffix" -ForegroundColor Red }
+    "SKIP" { Write-Host "  [SKIP] $($r.name)$detailSuffix" -ForegroundColor Yellow }
   }
 }
 

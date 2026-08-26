@@ -5,7 +5,7 @@
 # 功能:
 #   - 自动检测已安装的 Agent 工具 (Claude Code, Codex, Cursor, OpenClaw, Hermes,
 #     Trae, WorkBuddy, Qoder, Claude Desktop)
-#   - 为每个 agent 安装 TiMEM Skills (5 个) + 合并 TiMEM MCP 配置
+#   - 为每个 agent 安装 TiMEM Skills (5 个) + 合并 TiMEM MCP 配置 + 注入全局指令
 #   - 幂等: 重复安装安全，已有配置不覆盖，同名 skill 先 .bak 备份
 #   - 部分 agent 失败不影响其他，最后汇总
 #
@@ -18,6 +18,7 @@
 #   --skills LIST       只安装指定 skill (逗号分隔，默认全部 5 个)
 #   --skip-mcp          跳过 MCP 配置，只装 skills
 #   --skip-skills       跳过 skills，只配 MCP
+#   --skip-agent-instructions  跳过已支持 Agent 的指令注入
 #   --force             强制覆盖已有配置 (不用 .bak)
 #   --quiet             静默模式，只输出错误和最终摘要
 #   --dry-run           只检测和打印，不实际安装
@@ -38,6 +39,67 @@ TIMEM_MCP_REPO="https://github.com/TiMEM-AI/timem-mcp"
 TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp/"
 TIMEM_SERVER_NAME="TiMEM-SPACE"
 TIMEM_API_HOST_DEFAULT="https://api.space.timem.cloud"
+TIMEM_AGENT_INSTRUCTION="每次对话都要查看timem-memory的skill，并调用TiMEM-SPACE中合适的接口进行正确的记忆传输流程"
+TIMEM_INSTRUCTION_MARKER_REGEX='TiMEM-SPACE|太忆空间|timem-memory'
+CODEX_CONFIG_PATH="${CODEX_HOME:-}"
+if [ -z "$CODEX_CONFIG_PATH" ]; then
+  CODEX_CONFIG_PATH="$HOME/.codex"
+fi
+QODER_CONFIG_PATH="${QODER_CONFIG_DIR:-}"
+if [ -z "$QODER_CONFIG_PATH" ]; then
+  QODER_CONFIG_PATH="$HOME/.qoder"
+fi
+HERMES_CONFIG_PATH="${HERMES_HOME:-}"
+if [ -z "$HERMES_CONFIG_PATH" ]; then
+  HERMES_CONFIG_PATH="$HOME/.hermes"
+fi
+
+resolve_trae_mcp_config() {
+  local candidate platform
+  local -a candidates=()
+
+  if [ -n "${TRAE_MCP_CONFIG:-}" ]; then
+    printf '%s\n' "$TRAE_MCP_CONFIG"
+    return 0
+  fi
+
+  if [ -n "${APPDATA:-}" ]; then
+    candidates+=(
+      "$APPDATA/Trae/User/mcp.json"
+      "$APPDATA/TRAE SOLO CN/User/mcp.json"
+      "$APPDATA/TRAE SOLO/User/mcp.json"
+    )
+  fi
+
+  platform="$(uname -s 2>/dev/null || true)"
+  case "$platform" in
+    Darwin*) candidates+=(
+      "$HOME/Library/Application Support/Trae/User/mcp.json"
+      "$HOME/Library/Application Support/TRAE SOLO CN/User/mcp.json"
+    ) ;;
+    MINGW*|MSYS*|CYGWIN*) candidates+=(
+      "$HOME/AppData/Roaming/Trae/User/mcp.json"
+      "$HOME/AppData/Roaming/TRAE SOLO CN/User/mcp.json"
+    ) ;;
+    *) candidates+=(
+      "$HOME/.config/Trae/User/mcp.json"
+      "$HOME/.config/TRAE SOLO CN/User/mcp.json"
+    ) ;;
+  esac
+  candidates+=("$HOME/.trae/mcp.json")
+
+  for candidate in "${candidates[@]}"; do
+    if [ -e "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  printf '%s\n' "${candidates[0]}"
+}
+
+TRAE_MCP_CONFIG_PATH="$(resolve_trae_mcp_config)"
+TRAE_CONFIG_PATH="$(dirname "$TRAE_MCP_CONFIG_PATH")"
 
 # 3 个 TiMEM skills (TiMEM-SPACE MCP 仅支持记忆工具): name:repo_relative_path
 ALL_SKILLS=(
@@ -46,16 +108,16 @@ ALL_SKILLS=(
   "timem-writing-memory:skills/timem-writing-memory"
 )
 
-# Agent 矩阵: name|detect_cmd|config_dir|skills_dir|mcp_config|format|root_key|has_skills
+# Agent 矩阵: name|detect_cmd|config_dir|skills_dir|mcp_config|format|root_key|has_skills|instruction_file|instruction_scope|instruction_create_if_missing|additional_detect_dir
 AGENTS=(
-  "claude-code|claude|$HOME/.claude|$HOME/.claude/skills|$HOME/.claude/settings.json|json|mcpServers|yes"
-  "codex|codex|$HOME/.codex|$HOME/.codex/skills|$HOME/.codex/config.toml|toml|mcp_servers|yes"
-  "cursor|cursor|$HOME/.cursor|$HOME/.cursor/skills|$HOME/.cursor/mcp.json|json|mcpServers|yes"
-  "openclaw|openclaw|$HOME/.openclaw|$HOME/.openclaw/skills|$HOME/.openclaw/openclaw.json|json|mcp.servers|yes"
-  "hermes|hermes|$HOME/.hermes|$HOME/.hermes/skills|$HOME/.hermes/config.yaml|yaml|mcp_servers|yes"
-  "trae|trae|$HOME/.trae|$HOME/.trae/skills|$HOME/.trae/mcp.json|json|mcpServers|yes"
-  "workbuddy|workbuddy|$HOME/.workbuddy|$HOME/.workbuddy/skills|$HOME/.workbuddy/.mcp.json|json|mcpServers|yes"
-  "qoder|qoder|$HOME/.qoder|$HOME/.qoder/skills|$HOME/.qoder/mcp.json|json|mcpServers|yes"
+  "claude-code|claude|$HOME/.claude|$HOME/.claude/skills|$HOME/.claude.json|json|mcpServers|yes|CLAUDE.md"
+  "codex|codex|$CODEX_CONFIG_PATH|$CODEX_CONFIG_PATH/skills|$CODEX_CONFIG_PATH/config.toml|toml|mcp_servers|yes|AGENTS.md"
+  "cursor|cursor|$HOME/.cursor|$HOME/.cursor/skills|$HOME/.cursor/mcp.json|json|mcpServers|yes|timem-memory.mdc|cursor-user-rules"
+  "openclaw|openclaw|$HOME/.openclaw|$HOME/.openclaw/skills|$HOME/.openclaw/openclaw.json|json|mcp.servers|yes|AGENTS.md|openclaw-workspaces"
+  "hermes|hermes|$HERMES_CONFIG_PATH|$HERMES_CONFIG_PATH/skills|$HERMES_CONFIG_PATH/config.yaml|yaml|mcp_servers|yes|SOUL.md||no"
+  "trae|trae|$TRAE_CONFIG_PATH|$HOME/.trae/skills|$TRAE_MCP_CONFIG_PATH|json|mcpServers|yes|timem-memory.md|trae-user-rules||$HOME/.trae"
+  "workbuddy|workbuddy|$HOME/.workbuddy|$HOME/.workbuddy/skills|$HOME/.workbuddy/.mcp.json|json|mcpServers|yes|SOUL.md||no"
+  "qoder|qoder|$QODER_CONFIG_PATH|$QODER_CONFIG_PATH/skills|$QODER_CONFIG_PATH/settings.json|json|mcpServers|yes|AGENTS.md"
 )
 
 # Claude Desktop configs per platform (no skills, MCP only)
@@ -73,6 +135,7 @@ API_KEY="${TIMEM_API_KEY:-}"
 SKILLS_FILTER=""
 SKIP_MCP=false
 SKIP_SKILLS=false
+SKIP_AGENT_INSTRUCTIONS=false
 FORCE=false
 QUIET=false
 DRY_RUN=false
@@ -85,6 +148,7 @@ while [[ $# -gt 0 ]]; do
     --skills)      SKILLS_FILTER="$2"; shift 2 ;;
     --skip-mcp)    SKIP_MCP=true; shift ;;
     --skip-skills) SKIP_SKILLS=true; shift ;;
+    --skip-agent-instructions) SKIP_AGENT_INSTRUCTIONS=true; shift ;;
     --force)       FORCE=true; shift ;;
     --quiet)       QUIET=true; shift ;;
     --dry-run)     DRY_RUN=true; shift ;;
@@ -198,9 +262,13 @@ trap 'rm -rf "$TMPDIR_WORK"' EXIT
 # ============================================================================
 
 detect_agent() {
-  local detect_cmd="$1" config_dir="$2"
+  local detect_cmd="$1" config_dir="$2" candidate
+  shift 2
   command -v "$detect_cmd" &>/dev/null && return 0
   [ -d "$config_dir" ] && return 0
+  for candidate in "$@"; do
+    [ -n "$candidate" ] && [ -d "$candidate" ] && return 0
+  done
   return 1
 }
 
@@ -474,12 +542,293 @@ YAMLEOF
 }
 
 # ============================================================================
-# 为单个 agent 安装 (skills + mcp)
+# 全局 / 工作区 Agent 指令注入
+# ============================================================================
+
+resolve_agent_instruction_file() {
+  local config_dir="$1" instruction_file="$2" candidate
+  local -a candidates
+
+  case "$instruction_file" in
+    AGENTS.md) candidates=("AGENTS.md" "AGENT.md" "agents.md" "agent.md") ;;
+    CLAUDE.md) candidates=("CLAUDE.md" "claude.md") ;;
+    *) candidates=("$instruction_file") ;;
+  esac
+
+  for candidate in "${candidates[@]}"; do
+    if [ -f "$config_dir/$candidate" ]; then
+      printf '%s\n' "$config_dir/$candidate"
+      return 0
+    fi
+  done
+
+  printf '%s\n' "$config_dir/$instruction_file"
+}
+
+resolve_openclaw_instruction_dirs() {
+  local config_dir="$1" config_file="$2"
+
+  python3 - "$config_dir" "$config_file" <<'PYEOF'
+import json
+import os
+import sys
+
+config_dir, config_file = sys.argv[1:3]
+
+def resolve_workspace(value):
+    value = (value or "").strip()
+    if value == "~" or value.startswith("~/"):
+        return os.path.expanduser(value)
+    if os.path.isabs(value):
+        return value
+    return os.path.normpath(os.path.join(config_dir, value))
+
+config = {}
+if os.path.isfile(config_file):
+    try:
+        with open(config_file, "r", encoding="utf-8") as handle:
+            config = json.load(handle)
+    except Exception as exc:
+        print("OpenClaw workspace 配置解析失败，将使用默认路径: " + str(exc), file=sys.stderr)
+
+agents = config.get("agents") if isinstance(config, dict) else {}
+if not isinstance(agents, dict):
+    agents = {}
+
+environment_workspace = os.environ.get("OPENCLAW_WORKSPACE_DIR", "").strip()
+configured_workspace = (agents.get("defaults") or {}).get("workspace") if isinstance(agents.get("defaults"), dict) else ""
+workspace_setting = environment_workspace or configured_workspace
+if workspace_setting:
+    default_workspace = resolve_workspace(workspace_setting)
+else:
+    profile = os.environ.get("OPENCLAW_PROFILE", "").strip()
+    suffix = "" if not profile or profile.lower() == "default" else "-" + profile
+    default_workspace = os.path.join(config_dir, "workspace" + suffix)
+
+directories = []
+def add_directory(path):
+    if path and path not in directories:
+        directories.append(path)
+
+add_directory(default_workspace)
+entries = agents.get("list")
+if not isinstance(entries, list):
+    entries = []
+entries = list(entries)
+configured_entries = agents.get("entries")
+if isinstance(configured_entries, dict):
+    for agent_id, entry in configured_entries.items():
+        if isinstance(entry, dict):
+            entries.append({"id": agent_id, "workspace": entry.get("workspace")})
+
+for entry in entries:
+    if not isinstance(entry, dict):
+        continue
+    agent_id = str(entry.get("id") or entry.get("name") or "").strip()
+    workspace = entry.get("workspace")
+    if workspace:
+        add_directory(resolve_workspace(str(workspace)))
+    elif agent_id and agent_id.lower() not in ("main", "default"):
+        add_directory(os.path.join(config_dir, "workspace-" + agent_id))
+
+for directory in directories:
+    print(directory)
+PYEOF
+}
+
+ensure_cursor_user_rule() {
+  local agent_name="$1" config_dir="$2"
+  local rules_dir="$config_dir/rules"
+  local instruction_path="$rules_dir/timem-memory.mdc"
+  local grep_status
+
+  if [ "$SKIP_AGENT_INSTRUCTIONS" = true ]; then
+    info "已跳过 Agent 指令注入"
+    return 0
+  fi
+
+  if [ -e "$instruction_path" ] && [ ! -f "$instruction_path" ]; then
+    error "Cursor User Rule 路径不是文件 ($agent_name): $instruction_path"
+    return 1
+  fi
+
+  if [ -f "$instruction_path" ]; then
+    grep -Eiq -- "$TIMEM_INSTRUCTION_MARKER_REGEX" "$instruction_path"
+    grep_status=$?
+    if [ "$grep_status" -eq 0 ]; then
+      info "Cursor User Rule 已包含 TiMEM 标记: $instruction_path"
+      return 0
+    fi
+    if [ "$grep_status" -ne 1 ]; then
+      error "无法读取 Cursor User Rule ($agent_name): $instruction_path"
+      return 1
+    fi
+  fi
+
+  if [ "$DRY_RUN" = true ]; then
+    dryrun "注入 Cursor User Rule -> $instruction_path"
+    return 0
+  fi
+
+  mkdir -p "$rules_dir" || {
+    error "无法创建 Cursor User Rule 目录 ($agent_name): $rules_dir"
+    return 1
+  }
+
+  if [ -f "$instruction_path" ] && [ -s "$instruction_path" ]; then
+    if tail -c 1 "$instruction_path" | grep -q '^$'; then
+      printf '%s\n' "$TIMEM_AGENT_INSTRUCTION" >> "$instruction_path" || {
+        error "无法写入 Cursor User Rule ($agent_name): $instruction_path"
+        return 1
+      }
+    else
+      printf '\n%s\n' "$TIMEM_AGENT_INSTRUCTION" >> "$instruction_path" || {
+        error "无法写入 Cursor User Rule ($agent_name): $instruction_path"
+        return 1
+      }
+    fi
+  else
+    printf '%s\n' '---' 'description: "TiMEM memory workflow"' 'alwaysApply: true' '---' '' "$TIMEM_AGENT_INSTRUCTION" > "$instruction_path" || {
+      error "无法创建 Cursor User Rule ($agent_name): $instruction_path"
+      return 1
+    }
+  fi
+
+  success "Cursor User Rule 已注入: $instruction_path"
+}
+
+ensure_trae_user_rule() {
+  local agent_name="$1"
+  local rules_dir="$HOME/.trae/user_rules"
+  local instruction_path="$rules_dir/timem-memory.md"
+  local grep_status
+
+  if [ "$SKIP_AGENT_INSTRUCTIONS" = true ]; then
+    info "已跳过 Agent 指令注入"
+    return 0
+  fi
+
+  if [ -e "$instruction_path" ] && [ ! -f "$instruction_path" ]; then
+    error "TRAE Global Rule 路径不是文件 ($agent_name): $instruction_path"
+    return 1
+  fi
+
+  if [ -f "$instruction_path" ]; then
+    grep -Eiq -- "$TIMEM_INSTRUCTION_MARKER_REGEX" "$instruction_path"
+    grep_status=$?
+    if [ "$grep_status" -eq 0 ]; then
+      info "TRAE Global Rule 已包含 TiMEM 标记: $instruction_path"
+      return 0
+    fi
+    if [ "$grep_status" -ne 1 ]; then
+      error "无法读取 TRAE Global Rule ($agent_name): $instruction_path"
+      return 1
+    fi
+  fi
+
+  if [ "$DRY_RUN" = true ]; then
+    dryrun "注入 TRAE Global Rule -> $instruction_path"
+    return 0
+  fi
+
+  mkdir -p "$rules_dir" || {
+    error "无法创建 TRAE Global Rule 目录 ($agent_name): $rules_dir"
+    return 1
+  }
+
+  if [ -f "$instruction_path" ] && [ -s "$instruction_path" ]; then
+    if tail -c 1 "$instruction_path" | grep -q '^$'; then
+      printf '%s\n' "$TIMEM_AGENT_INSTRUCTION" >> "$instruction_path" || {
+        error "无法写入 TRAE Global Rule ($agent_name): $instruction_path"
+        return 1
+      }
+    else
+      printf '\n%s\n' "$TIMEM_AGENT_INSTRUCTION" >> "$instruction_path" || {
+        error "无法写入 TRAE Global Rule ($agent_name): $instruction_path"
+        return 1
+      }
+    fi
+  else
+    printf '%s\n' '---' 'alwaysApply: true' '---' '' "$TIMEM_AGENT_INSTRUCTION" > "$instruction_path" || {
+      error "无法创建 TRAE Global Rule ($agent_name): $instruction_path"
+      return 1
+    }
+  fi
+
+  success "TRAE Global Rule 已注入: $instruction_path"
+}
+
+ensure_agent_instruction() {
+  local agent_name="$1" instruction_dir="$2" instruction_file="$3" create_if_missing="${4:-yes}"
+  local instruction_path grep_status
+
+  if [ "$SKIP_AGENT_INSTRUCTIONS" = true ]; then
+    info "已跳过 Agent 指令注入"
+    return 0
+  fi
+
+  instruction_path="$(resolve_agent_instruction_file "$instruction_dir" "$instruction_file")"
+  if [ -e "$instruction_path" ] && [ ! -f "$instruction_path" ]; then
+    error "Agent 指令路径不是文件 ($agent_name): $instruction_path"
+    return 1
+  fi
+  if [ "$create_if_missing" = "no" ] && [ ! -e "$instruction_path" ]; then
+    info "Agent 指令文件不存在，保留默认行为 (跳过): $instruction_path"
+    return 0
+  fi
+
+  if [ -f "$instruction_path" ]; then
+    grep -Eiq -- "$TIMEM_INSTRUCTION_MARKER_REGEX" "$instruction_path"
+    grep_status=$?
+    if [ "$grep_status" -eq 0 ]; then
+      info "Agent 指令已包含 TiMEM 标记: $instruction_path"
+      return 0
+    fi
+    if [ "$grep_status" -ne 1 ]; then
+      error "无法读取 Agent 指令文件 ($agent_name): $instruction_path"
+      return 1
+    fi
+  fi
+
+  if [ "$DRY_RUN" = true ]; then
+    dryrun "注入 Agent 指令 -> $instruction_path"
+    return 0
+  fi
+
+  mkdir -p "$instruction_dir" || {
+    error "无法创建 Agent 指令目录 ($agent_name): $instruction_dir"
+    return 1
+  }
+
+  if [ -f "$instruction_path" ] && [ -s "$instruction_path" ]; then
+    if tail -c 1 "$instruction_path" | grep -q '^$'; then
+      printf '%s\n' "$TIMEM_AGENT_INSTRUCTION" >> "$instruction_path" || {
+        error "无法写入 Agent 指令文件 ($agent_name): $instruction_path"
+        return 1
+      }
+    else
+      printf '\n%s\n' "$TIMEM_AGENT_INSTRUCTION" >> "$instruction_path" || {
+        error "无法写入 Agent 指令文件 ($agent_name): $instruction_path"
+        return 1
+      }
+    fi
+  else
+    printf '%s\n' "$TIMEM_AGENT_INSTRUCTION" > "$instruction_path" || {
+      error "无法创建 Agent 指令文件 ($agent_name): $instruction_path"
+      return 1
+    }
+  fi
+
+  success "Agent 指令已注入: $instruction_path"
+}
+
+# ============================================================================
+# 为单个 agent 安装 (skills + mcp + instructions)
 # ============================================================================
 
 install_for_agent() {
   local agent_line="$1"
-  IFS='|' read -r name detect_cmd config_dir skills_dir mcp_config fmt root_key has_skills <<< "$agent_line"
+  IFS='|' read -r name detect_cmd config_dir skills_dir mcp_config fmt root_key has_skills instruction_file instruction_scope instruction_create_if_missing additional_detect_dir <<< "$agent_line"
 
   echo ""
   echo "━━━ $name ━━━"
@@ -490,7 +839,7 @@ install_for_agent() {
     return 0
   fi
 
-  if ! detect_agent "$detect_cmd" "$config_dir"; then
+  if ! detect_agent "$detect_cmd" "$config_dir" "$additional_detect_dir"; then
     info "未检测到 $name (跳过)"
     record_result "$name" "SKIP" "not installed"
     return 0
@@ -524,10 +873,26 @@ install_for_agent() {
     esac
   fi
 
+  if [ -n "$instruction_file" ]; then
+    if [ "$instruction_scope" = "cursor-user-rules" ]; then
+      ensure_cursor_user_rule "$name" "$config_dir" || agent_failed=true
+    elif [ "$instruction_scope" = "trae-user-rules" ]; then
+      ensure_trae_user_rule "$name" || agent_failed=true
+    elif [ "$instruction_scope" = "openclaw-workspaces" ]; then
+      local instruction_dir
+      while IFS= read -r instruction_dir; do
+        [ -z "$instruction_dir" ] && continue
+        ensure_agent_instruction "$name" "$instruction_dir" "$instruction_file" "$instruction_create_if_missing" || agent_failed=true
+      done < <(resolve_openclaw_instruction_dirs "$config_dir" "$mcp_config")
+    else
+      ensure_agent_instruction "$name" "$config_dir" "$instruction_file" "$instruction_create_if_missing" || agent_failed=true
+    fi
+  fi
+
   if [ "$agent_failed" = true ]; then
-    record_result "$name" "FAIL" "MCP merge failed"
+    record_result "$name" "FAIL" "MCP merge or agent instruction update failed"
   else
-    record_result "$name" "OK" "skills+MCP"
+    record_result "$name" "OK" "skills+MCP${instruction_file:+ +instructions}"
   fi
 }
 
@@ -608,8 +973,8 @@ interactive_select_agents() {
   local idx=1
 
   for agent_line in "${AGENTS[@]}"; do
-    IFS='|' read -r name detect_cmd config_dir _ _ _ _ _ <<< "$agent_line"
-    if detect_agent "$detect_cmd" "$config_dir"; then
+    IFS='|' read -r name detect_cmd config_dir _ _ _ _ _ _ _ _ additional_detect_dir <<< "$agent_line"
+    if detect_agent "$detect_cmd" "$config_dir" "$additional_detect_dir"; then
       detected_names+=("$name")
       detected_dirs+=("$config_dir")
       printf "  [%d] %-14s (%s)\n" "$idx" "$name" "$config_dir"
@@ -804,6 +1169,14 @@ interactive_confirm() {
   fi
   printf "  %-12s %s\n" "$(t "MCP 模式:" "MCP Mode:")" "$mcp_mode"
 
+  local instruction_mode
+  if [ "$SKIP_AGENT_INSTRUCTIONS" = true ]; then
+    instruction_mode="$(t "跳过" "Skipped")"
+  else
+    instruction_mode="$(t "注入已支持的 agent" "Inject for supported agents")"
+  fi
+  printf "  %-12s %s\n" "$(t "Agent 指令:" "Agent instructions:")" "$instruction_mode"
+
   # API Key (掩码显示)
   local key_display
   if [ -n "$API_KEY" ]; then
@@ -871,6 +1244,7 @@ fi
 info "MCP 模式: Cloud HTTP (零安装)"
 info "API Key: $([ -n "$API_KEY" ] && echo '已设置' || echo '未设置 (用 --api-key 或 \$TIMEM_API_KEY)')"
 info "Dry-run: $DRY_RUN"
+info "Agent 指令注入: $([ "$SKIP_AGENT_INSTRUCTIONS" = true ] && echo '跳过' || echo '已启用')"
 [ -n "$SKILLS_FILTER" ] && info "Skills 过滤: $SKILLS_FILTER"
 [ -n "$AGENT_FILTER" ]  && info "Agent 过滤: $AGENT_FILTER"
 

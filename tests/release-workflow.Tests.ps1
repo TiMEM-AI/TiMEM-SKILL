@@ -6,8 +6,15 @@ Describe 'COS release workflow' {
   It 'runs Windows installer tests before the COS publishing job' {
     $workflow | Should Match 'test-installer:'
     $workflow | Should Match 'runs-on: windows-latest'
-    $workflow | Should Match 'needs: test-installer'
+    $workflow | Should Match 'needs:\s*\[test-installer,\s*test-shell-installer\]'
     $workflow | Should Match 'Invoke-Pester.*tests'
+  }
+
+  It 'runs Bash installer tests before building release packages' {
+    $workflow | Should Match 'test-shell-installer:'
+    $workflow | Should Match 'bash tests/install-all\.sh\.Tests\.sh'
+    $buildJob = $workflow.Substring($workflow.IndexOf('build-packages:'))
+    $buildJob | Should Match 'needs:\s*\[test-installer,\s*test-shell-installer\]'
   }
 
   It 'is triggered when a release artifact or installer changes' {
@@ -21,6 +28,7 @@ Describe 'COS release workflow' {
     $workflow | Should Match 'scripts/build-release\.sh'
     $workflow | Should Match 'timem-skill-latest\.zip'
     $workflow | Should Match 'scripts/upload_cos\.py'
+    $workflow | Should Match 'timem-skill/install-all\.sh.*cmp -s install-all\.sh'
     $uploadScript | Should Match 'RELEASE_COS_PREFIX'
     $uploadScript | Should Match 'timem-skill-latest\.zip'
     $uploadScript | Should Match 'EnableMD5=True'

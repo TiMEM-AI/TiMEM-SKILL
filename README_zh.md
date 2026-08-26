@@ -27,6 +27,21 @@ cd timem-skill && bash install-all.sh --api-key 你的_TIMEM_API_KEY
 
 > **Windows (PowerShell)：** 下载解压后运行 `.\install-all.ps1 -ApiKey 你的_TIMEM_API_KEY -Agent codex`；`-Agent` 支持逗号分隔多个 agent，也可用环境变量 `TIMEM_AGENT`。
 
+安装器只会在已核验的用户级或 Agent workspace 指令目标中维护 TiMEM 工作流：
+
+| 客户端 | 指令目标 | 写入策略 |
+|---|---|---|
+| Codex | `$CODEX_HOME/AGENTS.md`（默认 `~/.codex/AGENTS.md`） | 不存在则创建，否则追加 |
+| Claude Code | `~/.claude/CLAUDE.md` | 不存在则创建，否则追加 |
+| Cursor | `~/.cursor/rules/timem-memory.mdc` | 创建本机 Always Apply User Rule |
+| TRAE | `~/.trae/user_rules/timem-memory.md` | 创建带 `alwaysApply` 的独立全局规则 |
+| Qoder CLI | `${QODER_CONFIG_DIR:-~/.qoder}/AGENTS.md` | 本地 CLI 扩展；不存在则创建，否则追加 |
+| OpenClaw | 每个解析出的 Agent workspace 内的 `AGENTS.md` | 遵从 workspace 覆盖与多 Agent 配置 |
+| Hermes | `${HERMES_HOME:-~/.hermes}/SOUL.md` | 仅在文件已存在时追加 |
+| WorkBuddy | `~/.workbuddy/SOUL.md` | 仅在文件已存在时追加 |
+
+若文件中不存在 `TiMEM-SPACE`、`太忆空间` 或 `timem-memory` 标记，会只在末尾追加一次，不覆盖已有内容。Cursor 已公开本机 User Rule 目录，安装器会创建带 `alwaysApply: true` 的 `.mdc` 规则；它只影响 Agent Chat。TRAE 已公开 Global Rules 目录，安装器会创建带 `alwaysApply: true` 的独立 Markdown 规则，且绝不修改项目规则。Claude Code 的用户级 MCP 会写入 `~/.claude.json`。Windows 上，TRAE MCP 配置依次优先使用 `%APPDATA%\Trae\User\mcp.json`、TRAE Solo 变体和旧版 `~/.trae/mcp.json`。使用 Bash 的 `--skip-agent-instructions` 或 PowerShell 的 `-SkipAgentInstructions` 可跳过此操作。详细依据见[支持矩阵调研](docs/agent-support-matrix-research.md)。
+
 **自行构建 ZIP：** `bash scripts/build-release.sh` → `bash scripts/upload-cos.sh`
 
 

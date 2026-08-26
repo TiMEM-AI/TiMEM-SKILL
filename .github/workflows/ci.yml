@@ -52,9 +52,20 @@ jobs:
           Import-Module Pester -RequiredVersion 3.4.0 -Force
           Invoke-Pester -Script .\tests -EnableExit
 
+  test-shell-installer:
+    name: Bash installer regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Bash installer tests
+        run: bash tests/install-all.sh.Tests.sh
+
   build-packages:
     name: Build and verify release artifacts
-    needs: test-installer
+    needs: [test-installer, test-shell-installer]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +98,7 @@ jobs:
           unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.ps1'
           unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.sh'
           unzip -p "${release_zip}" timem-skill/install-all.ps1 | cmp -s install-all.ps1 -
+          unzip -p "${release_zip}" timem-skill/install-all.sh | cmp -s install-all.sh -
           cp "${release_zip}" dist/release/timem-skill-latest.zip
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - uses: actions/upload-artifact@v4

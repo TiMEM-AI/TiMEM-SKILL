@@ -28,6 +28,21 @@ cd timem-skill && bash install-all.sh --api-key YOUR_TIMEM_API_KEY
 
 > **Windows (PowerShell):** Download and unzip, then run `.\install-all.ps1 -ApiKey YOUR_TIMEM_API_KEY -Agent codex`; `-Agent` accepts comma-separated agents, and `TIMEM_AGENT` remains supported.
 
+The installers maintain TiMEM instructions only at verified user-global or agent-workspace targets:
+
+| Client | Instruction target | Write policy |
+|---|---|---|
+| Codex | `$CODEX_HOME/AGENTS.md` (default: `~/.codex/AGENTS.md`) | Create or append |
+| Claude Code | `~/.claude/CLAUDE.md` | Create or append |
+| Cursor | `~/.cursor/rules/timem-memory.mdc` | Create a local Always Apply User Rule |
+| TRAE | `~/.trae/user_rules/timem-memory.md` | Create an independent `alwaysApply` Global Rule |
+| Qoder CLI | `${QODER_CONFIG_DIR:-~/.qoder}/AGENTS.md` | Local CLI extension; create or append |
+| OpenClaw | `AGENTS.md` in every resolved Agent workspace | Resolve workspace overrides and per-Agent entries |
+| Hermes | `${HERMES_HOME:-~/.hermes}/SOUL.md` | Append only when the file already exists |
+| WorkBuddy | `~/.workbuddy/SOUL.md` | Append only when the file already exists |
+
+If no TiMEM marker (`TiMEM-SPACE`, `太忆空间`, or `timem-memory`) is present, the workflow is appended once without overwriting user content. Cursor's documented local User Rule directory is used to create an `.mdc` rule with `alwaysApply: true`; it affects Agent Chat only. TRAE's documented Global Rules directory is used to create an independent Markdown rule with `alwaysApply: true`; project rules are never changed. Claude Code's user-level MCP entry is written to `~/.claude.json`. On Windows, TRAE MCP resolution prioritizes `%APPDATA%\Trae\User\mcp.json`, then TRAE Solo variants, and finally the legacy `~/.trae/mcp.json`. Use `--skip-agent-instructions` (Bash) or `-SkipAgentInstructions` (PowerShell) to opt out. See [the support-matrix research](docs/agent-support-matrix-research.md) for scope and sources.
+
 **Build your own ZIP:** `bash scripts/build-release.sh` → `bash scripts/upload-cos.sh`
 
 ## Recommended (coding)

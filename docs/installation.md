@@ -7,6 +7,35 @@ Install [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) first, then install o
 - TiMEM MCP configured (`TiMEM_API_KEY`)
 - An Agent Skills–compatible client (Cursor, Claude Code, Codex, etc.)
 
+## Global agent instructions
+
+The one-click installers update only verified user-global or Agent-workspace instruction targets. They never search repositories for instruction files or change project-level rules.
+
+| Client | Instruction target | Behavior |
+|---|---|---|
+| Codex | `$CODEX_HOME/AGENTS.md` (default: `~/.codex/AGENTS.md`) | Create or append. The installer honors `CODEX_HOME`. |
+| Claude Code | `~/.claude/CLAUDE.md` | Create or append. |
+| Cursor | `~/.cursor/rules/timem-memory.mdc` | Create a local `.mdc` User Rule with `alwaysApply: true`. |
+| TRAE | `~/.trae/user_rules/timem-memory.md` | Create an independent Markdown Global Rule with `alwaysApply: true`. |
+| Qoder CLI | `${QODER_CONFIG_DIR:-~/.qoder}/AGENTS.md` | Local extension; create or append. This does **not** apply to Qoder IDE project rules. |
+| OpenClaw | `<resolved-agent-workspace>/AGENTS.md` | Create or append for the default workspace and configured per-Agent workspaces. |
+| Hermes | `${HERMES_HOME:-~/.hermes}/SOUL.md` | Append only when `SOUL.md` already exists. |
+| WorkBuddy | `~/.workbuddy/SOUL.md` | Append only when `SOUL.md` already exists. |
+
+For OpenClaw, the resolver honors `OPENCLAW_WORKSPACE_DIR`, `OPENCLAW_PROFILE`, `agents.defaults.workspace`, and configured Agent workspace entries. It does not write `~/.openclaw/AGENTS.md`.
+
+Hermes and WorkBuddy are intentionally append-only. Their `SOUL.md` files contain the Agent's identity and persistent behavior; the installer does not create them, so enabling TiMEM cannot silently replace the default behavior.
+
+Cursor documents `~/.cursor/rules` as the per-machine User Rule directory. The installer creates `timem-memory.mdc` there with the documented rule-file format and `alwaysApply: true`; it applies to Cursor Agent Chat, not Tab, Inline Edit, or Bugbot. TRAE documents `~/.trae/user_rules` as its Global Rules directory, so the installer creates its own `timem-memory.md` there with `alwaysApply: true` and never modifies project `.trae/rules`. Claude Code's user-level MCP entry is written to `~/.claude.json`. On Windows, TRAE MCP resolution prioritizes `%APPDATA%\Trae\User\mcp.json`, then the TRAE Solo variants, and finally legacy `~/.trae/mcp.json`.
+
+The installer searches each selected file once for `TiMEM-SPACE`, `太忆空间`, or `timem-memory`; if none is found, it appends:
+
+```text
+每次对话都要查看timem-memory的skill，并调用TiMEM-SPACE中合适的接口进行正确的记忆传输流程
+```
+
+This operation is idempotent. To opt out, use `--skip-agent-instructions` in Bash or `-SkipAgentInstructions` in PowerShell. The verification evidence and source links are in [agent-instruction-research.md](agent-instruction-research.md).
+
 ## What to install
 
 | Project type | Skills |
