@@ -12,6 +12,8 @@ description: >-
 
 # TiMEM Memory Skill
 
+Use TiMEM memory with MCP (`search_memories` / `create_memory` / `delete_memory`).
+
 One skill covering three domains (`coding`, `general`, `writing`). Pick the domain by scene, then search before reply and create after reply — every turn, no exceptions.
 
 ## Trigger
@@ -20,18 +22,18 @@ When TiMEM MCP is connected — **every turn, no exceptions**.
 
 ## Domain 选择
 
-| 场景 | domain | session_id |
-|------|--------|------------|
-| 代码/调试/架构 | `coding` | repo 名（必填）|
-| 个人/办公/通用 | `general` | `personal` 或 topic（必填）|
-| 文案/写作/风格 | `writing` | series 名（可选）|
+| 场景 | domain |
+|------|--------|
+| 代码/调试/架构 | `coding` |
+| 个人/办公/通用 | `general` |
+| 文案/写作/风格 | `writing` |
 
 模糊时：`classify_memory_scene(messages=[...])` → returns `scene`, `expert_id`, `confidence`. If confidence is low, default to `general` or ask the user.
 
 ## Instructions
 
 1. **选 domain** — 按上表选择 `coding` / `general` / `writing`
-2. **Search**: Call `search_memories` BEFORE generating reply (pass `domain`, `query_text`, `session_id`; coding also passes `search_tier=S3`)
+2. **Search**: Call `search_memories` BEFORE generating reply (pass `domain`, `query_text`; coding also passes `search_tier=S3`. **Do not pass `session_id`** — the server schema has no such field)
 3. **Reply**: Generate reply using recalled context + fresh context
 4. **Create**: Call `create_memory` AFTER generating reply, passing 2-4 recent turns — **every turn, no skip**
 5. **"记"字强制**: If user message contains "记", MUST call `create_memory` even if you think there's nothing new to store
@@ -42,32 +44,32 @@ When TiMEM MCP is connected — **every turn, no exceptions**.
 
 Input: User asks "timem-mcp 的 rule learning 循环是怎么实现的？"
 
-1. `search_memories(domain="coding", query_text="rule learning 循环实现", session_id="timem-mcp", search_tier="S3")` → returns 2 hits about rule loop architecture
+1. `search_memories(domain="coding", query_text="rule learning 循环实现", search_tier="S3")` → returns 2 hits about rule loop architecture
 2. Answer the question using recalled + fresh code context
-3. `create_memory(domain="coding", session_id="timem-mcp", messages=[...recent turns...])`
+3. `create_memory(domain="coding", messages=[...recent turns...])`
 
 ### General
 
 Input: User says "我们团队 Q3 的 OKR 是什么？"
 
-1. `search_memories(domain="general", query_text="团队 Q3 OKR 目标", session_id="acme-q3")` → returns 1 hit with Q3 OKR details
+1. `search_memories(domain="general", query_text="团队 Q3 OKR 目标")` → returns 1 hit with Q3 OKR details
 2. Answer using the recalled information
-3. `create_memory(domain="general", session_id="acme-q3", messages=[...recent turns...])`
+3. `create_memory(domain="general", messages=[...recent turns...])`
 
 ### Writing
 
 Input: User says "按之前的语气写一段产品介绍"
 
-1. `search_memories(domain="writing", query_text="产品介绍 语气 风格", session_id="product-launch-copy")` → returns 1 hit with established tone guidelines
+1. `search_memories(domain="writing", query_text="产品介绍 语气 风格")` → returns 1 hit with established tone guidelines
 2. Write the product introduction matching the established style
-3. `create_memory(domain="writing", session_id="product-launch-copy", messages=[...recent turns...])`
+3. `create_memory(domain="writing", messages=[...recent turns...])`
 
 ## Parameters
 
 | Field | coding | general | writing |
 |-------|--------|---------|---------|
 | `domain` | `coding` | `general` | `writing` |
-| `session_id` | **必填** — stable repo/project name (e.g. `timem-mcp`) | **必填** — `personal` or stable topic (e.g. `acme-q3`) | **可选** — stable series/doc name (e.g. `blog-2026`) |
+| `session_id` | **不传** — 服务端 schema 无此字段 | **不传** — 同左 | **不传** — 同左 |
 | `search_tier` | `S3` 默认；`S0` 回忆；`S6` 删除前 | 不用 | 不用 |
 | `memory_hint` | 6 种可选: `decision` / `constraint` / `lesson` / `convention` / `preference` / `correction` | 不用 | 不用 |
 | `query_text` | 3–12 task-oriented words | 3–12 task-oriented words | 3–12 task-oriented words |
@@ -109,5 +111,7 @@ For business repos: [assets/agents-snippet.md](assets/agents-snippet.md)
 
 ## Changelog
 
+- 0.3.1 (2026-08-26): Remove all `session_id` requirements — server schema has no such field. Examples and parameter tables updated accordingly.
+- 0.3.0 (2026-08-20): Remove all create skip conditions — create every turn, no exceptions. Server dedup handles trivial turns. Search skip conditions retained (typo/trivia/别搜).
 - 0.2.0 (2026-08-19): Merge timem-coding-memory + timem-general-memory + timem-writing-memory into single skill `timem-memory-skill`. One skill, three domains, domain selection by scene.
 - 0.1.0 (2026-08-18): Initial individual skill versions (coding, general, writing).

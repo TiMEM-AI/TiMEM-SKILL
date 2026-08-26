@@ -26,7 +26,7 @@ Semantic search over stored memories.
 |-----------|----------|-------|
 | `query_text` | **Yes** | 3–12 task-oriented words; empty query causes API error |
 | `domain` | Recommended | `general` / `coding` / `writing` → filters expert space |
-| `session_id` | Scene-dependent | See each skill; stable name, not random UUID per turn. General: always pass `personal` or topic. |
+| `session_id` | **No** | Server schema has no such field. Do not pass — scope is resolved from API key. |
 | `search_tier` | Coding: recommended | `S3` by default; `S0` for explicit recall, `S6` before delete; enables empty-search `elevate_create` |
 | `limit` | No | Default 10; use 5 for task-start, 10 for explicit recall |
 
@@ -36,7 +36,6 @@ Example:
 search_memories(
   query_text="auth JWT decision",
   domain="coding",
-  session_id="timem-mcp",
   search_tier="S3",
   limit=5,
 )
@@ -50,7 +49,7 @@ Response may include (does **not** auto-create):
 |-------|---------|
 | `memory_gap` | No hits for this query in coding space |
 | `guidance` | Short next-step hint from MCP |
-| `elevate_create` | Soft signal to consider create after verify (needs `search_tier` + `session_id`) |
+| `elevate_create` | Soft signal to consider create after verify (needs `search_tier`) |
 | `suggested_next` | Often includes `create_memory` |
 
 Work from codebase; apply the coding skill write rubric before `create_memory`.
@@ -64,7 +63,7 @@ Create memories from conversation turns (async on backend; waits by default).
 | Parameter | Required | Notes |
 |-----------|----------|-------|
 | `messages` | **Yes** | 2–4 decision-relevant turns; `{role, content}` |
-| `session_id` | **Yes** | Stable scope. Coding: repo name. General: always `personal` or topic (never omit). Writing: series/doc name. |
+| `session_id` | **No** | Server schema has no such field. Do not pass — scope is resolved from API key. |
 | `domain` | Recommended | `general` / `coding` / `writing` |
 | `memory_hint` | No | Coding only: `decision` \| `constraint` \| `lesson` \| `convention` \| `preference` \| `correction`. Agent typing hint; MCP may not persist it to Engine today. |
 
@@ -73,7 +72,6 @@ Example:
 ```
 create_memory(
   domain="general",
-  session_id="personal",
   messages=[
     {"role": "user", "content": "Remember I prefer concise answers."},
     {"role": "assistant", "content": "Stored: prefer concise answers."},

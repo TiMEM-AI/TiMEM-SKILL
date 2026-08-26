@@ -16,7 +16,7 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 **Default: search on every turn.** Call `search_memories` BEFORE answering — even if the user did not say remember/记得. Retrieval is cheap; missed context is expensive.
 
-1. `search_memories(query_text=<3–12 words>, domain="general", session_id="personal"|<topic>, limit=5)`
+1. `search_memories(query_text=<3–12 words>, domain="general", limit=5)`
 2. Verify hits against the current conversation; abstain if stale or contradictory.
 
 **Skip search** only for: pure trivia (e.g. "今天星期几"); user explicitly said "别搜"; a previous call this turn already returned what you need.
@@ -27,22 +27,11 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 **Default: create after answering.** The server extracts facts and dedups against history, so passing the raw turns is enough.
 
-- `create_memory(domain="general", session_id="personal"|<topic>, messages=[2–4 recent turns])`
+- `create_memory(domain="general", messages=[2–4 recent turns])`
 
-**Skip create** only for: pure mood / disposable chit-chat with no durable content ("今天有点累"); process-only narration with no conclusion; nothing new vs. what you just searched; user said not to store.
+**No skip.** Create every turn — the server extracts facts and dedups against history, so even seemingly trivial turns may hold durable context. Passing the raw turns is enough.
 
-More search ≠ more create judgment for you — the gate is only the narrow list above.
-
-### session_id
-
-**Always required** on both search and create.
-
-| Use case | `session_id` |
-|----------|--------------|
-| Global preference / identity | `personal` |
-| Topic / project / office thread | Stable name e.g. `timem-product`, `acme-q3` |
-
-Never omit; never use a random UUID per turn.
+**Scope:** the server resolves scope from your API key; **do not pass `session_id`** — the schema has no such field.
 
 ## Writing domain
 
@@ -57,7 +46,6 @@ Never omit; never use a random UUID per turn.
    search_memories(
      query_text="<style or audience keywords>",
      domain="writing",
-     session_id="<optional series name>",
      limit=5,
    )
    ```
@@ -69,35 +57,21 @@ Never omit; never use a random UUID per turn.
 
 ### Create workflow
 
-Gate hits only when reusable writing rules are confirmed.
+**No skip.** Create every turn — the server extracts facts and dedups against history.
 
-1. **Trigger** — user locks in reusable writing rules or preferences?
-2. **Summarize** — style/audience/tone in 1–3 sentences.
-3. **Call**:
+1. **Call**:
    ```
    create_memory(
      domain="writing",
-     session_id="<series name if applicable>",
-     messages=[
-       {"role": "user", "content": "<constraint in user's words>"},
-       {"role": "assistant", "content": "<confirmation of stored style rule>"},
-     ],
+     messages=[2–4 recent turns],
    )
    ```
 
-More search ≠ more create.
-
-### session_id guidance
-
-| Use case | session_id |
-|----------|------------|
-| Global writing habit | Omit or `writing-default` |
-| Blog series / campaign | Stable name e.g. `blog-2026` |
-| Single doc project | e.g. `product-launch-copy` |
+**Do not pass `session_id`** — the schema has no such field; scope comes from the API key.
 
 ### Task end
 
-At most **0–3** writing memories per task; prefer durable style rules over one-off phrasing.
+Create every turn; the server dedups, so prefer passing raw turns over manually gating.
 
 ## Coding domain
 
@@ -108,10 +82,8 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 ### Per-turn workflow (coding)
 
-1. **Search**: `search_memories(domain="coding", query_text=<3–12 words>, session_id="<repo-name>", search_tier="S3", limit=5)` BEFORE exploratory codebase grep/read
+1. **Search**: `search_memories(domain="coding", query_text=<3–12 words>, search_tier="S3", limit=5)` BEFORE exploratory codebase grep/read
 2. **Reply**: Generate reply using recalled context + fresh code/work context
-3. **Create**: `create_memory(domain="coding", session_id="<repo-name>", memory_hint="<optional>", messages=[2–4 recent turns])` AFTER reply
+3. **Create**: `create_memory(domain="coding", memory_hint="<optional>", messages=[2–4 recent turns])` AFTER reply
 
-### session_id
-
-**Always required** — stable repo/project name (e.g. `timem-mcp`); never a random UUID.
+**Do not pass `session_id`** — repo scope is not a client parameter; the server schema has no such field.

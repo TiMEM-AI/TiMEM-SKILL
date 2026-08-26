@@ -14,6 +14,8 @@ description: >-
 
 # TiMEM Memory Skill
 
+Use TiMEM memory with MCP (`search_memories` / `create_memory` / `delete_memory`).
+
 One skill covering three domains (`coding`, `general`, `writing`). Pick the domain by scene, then search before reply and create after reply — every turn, no exceptions.
 
 ## Trigger
@@ -22,18 +24,18 @@ When TiMEM MCP is connected — **every turn, no exceptions**.
 
 ## Domain 选择
 
-| 场景 | domain | session_id |
-|------|--------|------------|
-| 代码/调试/架构 | `coding` | repo 名（必填）|
-| 个人/办公/通用 | `general` | `personal` 或 topic（必填）|
-| 文案/写作/风格 | `writing` | series 名（可选）|
+| 场景 | domain |
+|------|--------|
+| 代码/调试/架构 | `coding` |
+| 个人/办公/通用 | `general` |
+| 文案/写作/风格 | `writing` |
 
 模糊时：`classify_memory_scene(messages=[...])` → returns `scene`, `expert_id`, `confidence`. If confidence is low, default to `general` or ask the user.
 
 ## Instructions
 
 1. **选 domain** — 按上表选择 `coding` / `general` / `writing`
-2. **Search**: Call `search_memories` BEFORE generating reply (pass `domain`, `query_text`, `session_id`; coding also passes `search_tier=S3`)
+2. **Search**: Call `search_memories` BEFORE generating reply (pass `domain`, `query_text`; coding also passes `search_tier=S3`. **Do not pass `session_id`** — the server schema has no such field)
 3. **Reply**: Generate reply using recalled context + fresh context
 4. **Create**: Call `create_memory` AFTER generating reply, passing 2-4 recent turns — **every turn, no skip**
 5. **"记"字强制**: If user message contains "记", MUST call `create_memory` even if you think there's nothing new to store
@@ -44,32 +46,32 @@ When TiMEM MCP is connected — **every turn, no exceptions**.
 
 Input: User asks "timem-mcp 的 rule learning 循环是怎么实现的？"
 
-1. `search_memories(domain="coding", query_text="rule learning 循环实现", session_id="timem-mcp", search_tier="S3")` → returns 2 hits about rule loop architecture
+1. `search_memories(domain="coding", query_text="rule learning 循环实现", search_tier="S3")` → returns 2 hits about rule loop architecture
 2. Answer the question using recalled + fresh code context
-3. `create_memory(domain="coding", session_id="timem-mcp", messages=[...recent turns...])`
+3. `create_memory(domain="coding", messages=[...recent turns...])`
 
 ### General
 
 Input: User says "我们团队 Q3 的 OKR 是什么？"
 
-1. `search_memories(domain="general", query_text="团队 Q3 OKR 目标", session_id="acme-q3")` → returns 1 hit with Q3 OKR details
+1. `search_memories(domain="general", query_text="团队 Q3 OKR 目标")` → returns 1 hit with Q3 OKR details
 2. Answer using the recalled information
-3. `create_memory(domain="general", session_id="acme-q3", messages=[...recent turns...])`
+3. `create_memory(domain="general", messages=[...recent turns...])`
 
 ### Writing
 
 Input: User says "按之前的语气写一段产品介绍"
 
-1. `search_memories(domain="writing", query_text="产品介绍 语气 风格", session_id="product-launch-copy")` → returns 1 hit with established tone guidelines
+1. `search_memories(domain="writing", query_text="产品介绍 语气 风格")` → returns 1 hit with established tone guidelines
 2. Write the product introduction matching the established style
-3. `create_memory(domain="writing", session_id="product-launch-copy", messages=[...recent turns...])`
+3. `create_memory(domain="writing", messages=[...recent turns...])`
 
 ## Parameters
 
 | Field | coding | general | writing |
 |-------|--------|---------|---------|
 | `domain` | `coding` | `general` | `writing` |
-| `session_id` | **必填** — stable repo/project name (e.g. `timem-mcp`) | **必填** — `personal` or stable topic (e.g. `acme-q3`) | **可选** — stable series/doc name (e.g. `blog-2026`) |
+| `session_id` | **不传** — 服务端 schema 无此字段 | **不传** — 同左 | **不传** — 同左 |
 | `search_tier` | `S3` 默认；`S0` 回忆；`S6` 删除前 | 不用 | 不用 |
 | `memory_hint` | 6 种可选: `decision` / `constraint` / `lesson` / `convention` / `preference` / `correction` | 不用 | 不用 |
 | `query_text` | 3–12 task-oriented words | 3–12 task-oriented words | 3–12 task-oriented words |
@@ -113,6 +115,8 @@ Optional AGENTS.md paste template (human-facing, not required at runtime): in th
 
 ## Changelog
 
+- 0.3.1 (2026-08-26): Remove all `session_id` requirements — server schema has no such field. Examples and parameter tables updated accordingly.
+- 0.3.0 (2026-08-20): Remove all create skip conditions — create every turn, no exceptions. Server dedup handles trivial turns. Search skip conditions retained (typo/trivia/别搜).
 - 0.2.0 (2026-08-19): Merge timem-coding-memory + timem-general-memory + timem-writing-memory into single skill `timem-memory-skill`. One skill, three domains, domain selection by scene.
 - 0.1.0 (2026-08-18): Initial individual skill versions (coding, general, writing).
 
@@ -132,7 +136,7 @@ Semantic search over stored memories.
 |-----------|----------|-------|
 | `query_text` | **Yes** | 3–12 task-oriented words; empty query causes API error |
 | `domain` | Recommended | `general` / `coding` / `writing` → filters expert space |
-| `session_id` | Scene-dependent | See each skill; stable name, not random UUID per turn. General: always pass `personal` or topic. |
+| `session_id` | **No** | Server schema has no such field. Do not pass — scope is resolved from API key. |
 | `search_tier` | Coding: recommended | `S3` by default; `S0` for explicit recall, `S6` before delete; enables empty-search `elevate_create` |
 | `limit` | No | Default 10; use 5 for task-start, 10 for explicit recall |
 
@@ -142,7 +146,6 @@ Example:
 search_memories(
   query_text="auth JWT decision",
   domain="coding",
-  session_id="timem-mcp",
   search_tier="S3",
   limit=5,
 )
@@ -156,7 +159,7 @@ Response may include (does **not** auto-create):
 |-------|---------|
 | `memory_gap` | No hits for this query in coding space |
 | `guidance` | Short next-step hint from MCP |
-| `elevate_create` | Soft signal to consider create after verify (needs `search_tier` + `session_id`) |
+| `elevate_create` | Soft signal to consider create after verify (needs `search_tier`) |
 | `suggested_next` | Often includes `create_memory` |
 
 Work from codebase; apply the coding skill write rubric before `create_memory`.
@@ -168,7 +171,7 @@ Create memories from conversation turns (async on backend; waits by default).
 | Parameter | Required | Notes |
 |-----------|----------|-------|
 | `messages` | **Yes** | 2–4 decision-relevant turns; `{role, content}` |
-| `session_id` | **Yes** | Stable scope. Coding: repo name. General: always `personal` or topic (never omit). Writing: series/doc name. |
+| `session_id` | **No** | Server schema has no such field. Do not pass — scope is resolved from API key. |
 | `domain` | Recommended | `general` / `coding` / `writing` |
 | `memory_hint` | No | Coding only: `decision` \| `constraint` \| `lesson` \| `convention` \| `preference` \| `correction`. Agent typing hint; MCP may not persist it to Engine today. |
 
@@ -177,7 +180,6 @@ Example:
 ```
 create_memory(
   domain="general",
-  session_id="personal",
   messages=[
     {"role": "user", "content": "Remember I prefer concise answers."},
     {"role": "assistant", "content": "Stored: prefer concise answers."},
@@ -215,7 +217,7 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 **Default: search on every turn.** Call `search_memories` BEFORE answering — even if the user did not say remember/记得. Retrieval is cheap; missed context is expensive.
 
-1. `search_memories(query_text=<3–12 words>, domain="general", session_id="personal"|<topic>, limit=5)`
+1. `search_memories(query_text=<3–12 words>, domain="general", limit=5)`
 2. Verify hits against the current conversation; abstain if stale or contradictory.
 
 **Skip search** only for: pure trivia (e.g. "今天星期几"); user explicitly said "别搜"; a previous call this turn already returned what you need.
@@ -226,22 +228,11 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 **Default: create after answering.** The server extracts facts and dedups against history, so passing the raw turns is enough.
 
-- `create_memory(domain="general", session_id="personal"|<topic>, messages=[2–4 recent turns])`
+- `create_memory(domain="general", messages=[2–4 recent turns])`
 
-**Skip create** only for: pure mood / disposable chit-chat with no durable content ("今天有点累"); process-only narration with no conclusion; nothing new vs. what you just searched; user said not to store.
+**No skip.** Create every turn — the server extracts facts and dedups against history, so even seemingly trivial turns may hold durable context. Passing the raw turns is enough.
 
-More search ≠ more create judgment for you — the gate is only the narrow list above.
-
-#### session_id
-
-**Always required** on both search and create.
-
-| Use case | `session_id` |
-|----------|--------------|
-| Global preference / identity | `personal` |
-| Topic / project / office thread | Stable name e.g. `timem-product`, `acme-q3` |
-
-Never omit; never use a random UUID per turn.
+**Scope:** the server resolves scope from your API key; **do not pass `session_id`** — the schema has no such field.
 
 ### Writing domain
 
@@ -256,7 +247,6 @@ Never omit; never use a random UUID per turn.
    search_memories(
      query_text="<style or audience keywords>",
      domain="writing",
-     session_id="<optional series name>",
      limit=5,
    )
    ```
@@ -268,35 +258,21 @@ Never omit; never use a random UUID per turn.
 
 #### Create workflow
 
-Gate hits only when reusable writing rules are confirmed.
+**No skip.** Create every turn — the server extracts facts and dedups against history.
 
-1. **Trigger** — user locks in reusable writing rules or preferences?
-2. **Summarize** — style/audience/tone in 1–3 sentences.
-3. **Call**:
+1. **Call**:
    ```
    create_memory(
      domain="writing",
-     session_id="<series name if applicable>",
-     messages=[
-       {"role": "user", "content": "<constraint in user's words>"},
-       {"role": "assistant", "content": "<confirmation of stored style rule>"},
-     ],
+     messages=[2–4 recent turns],
    )
    ```
 
-More search ≠ more create.
-
-#### session_id guidance
-
-| Use case | session_id |
-|----------|------------|
-| Global writing habit | Omit or `writing-default` |
-| Blog series / campaign | Stable name e.g. `blog-2026` |
-| Single doc project | e.g. `product-launch-copy` |
+**Do not pass `session_id`** — the schema has no such field; scope comes from the API key.
 
 #### Task end
 
-At most **0–3** writing memories per task; prefer durable style rules over one-off phrasing.
+Create every turn; the server dedups, so prefer passing raw turns over manually gating.
 
 ### Coding domain
 
@@ -307,13 +283,11 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 #### Per-turn workflow (coding)
 
-1. **Search**: `search_memories(domain="coding", query_text=<3–12 words>, session_id="<repo-name>", search_tier="S3", limit=5)` BEFORE exploratory codebase grep/read
+1. **Search**: `search_memories(domain="coding", query_text=<3–12 words>, search_tier="S3", limit=5)` BEFORE exploratory codebase grep/read
 2. **Reply**: Generate reply using recalled context + fresh code/work context
-3. **Create**: `create_memory(domain="coding", session_id="<repo-name>", memory_hint="<optional>", messages=[2–4 recent turns])` AFTER reply
+3. **Create**: `create_memory(domain="coding", memory_hint="<optional>", messages=[2–4 recent turns])` AFTER reply
 
-#### session_id
-
-**Always required** — stable repo/project name (e.g. `timem-mcp`); never a random UUID.
+**Do not pass `session_id`** — repo scope is not a client parameter; the server schema has no such field.
 
 ## Memory examples
 
@@ -325,8 +299,8 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **Actions:**
 
-1. `search_memories(query_text="MCP 配置 uvx", domain="coding", session_id="timem-mcp", search_tier="S3", limit=5)`
-2. Answer → `create_memory(domain="coding", session_id="timem-mcp", memory_hint="constraint", messages=[...])`
+1. `search_memories(query_text="MCP 配置 uvx", domain="coding", search_tier="S3", limit=5)`
+2. Answer → `create_memory(domain="coding", memory_hint="constraint", messages=[...])`
 
 #### Example 2 — Module overview (search first, then code, then create)
 
@@ -334,7 +308,7 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **Actions:**
 
-1. `search_memories(query_text="记忆模块 架构", domain="coding", session_id="timem-platform-backend", search_tier="S3", limit=5)`
+1. `search_memories(query_text="记忆模块 架构", domain="coding", search_tier="S3", limit=5)`
 2. If `count=0`: read `memory_gap` / `elevate_create`; verify from code (`app/memory_management`, `core/timem_core`)
 3. Answer combining verified memories + codebase
 4. `create_memory(memory_hint="convention", messages=[the Q + your verified summary])`
@@ -345,18 +319,18 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **Actions:**
 
-1. `search_memories(query_text="auth 架构 决策", domain="coding", session_id="timem-mcp", search_tier="S0", limit=10)`
+1. `search_memories(query_text="auth 架构 决策", domain="coding", search_tier="S0", limit=10)`
 2. Answer from verified memories only → `create_memory` with this exchange
 
-#### Example 4 — Typo fix (skip both)
+#### Example 4 — Typo fix (skip search, still create)
 
-**User:** "这个变量名拼错了，改一下" → No search, no create.
+**User:** "这个变量名拼错了，改一下" → No search. Create after fix (the exchange may hold reusable convention).
 
 #### Example 5 — Task with a conclusion (search + create)
 
 **Context:** 6 turns on auth refactor; JWT chosen and implemented; user says "好了就这样"
 
-**Actions:** `create_memory(domain="coding", session_id="timem-mcp", memory_hint="decision", messages=[4–6 relevant turns covering the JWT choice])` — no special closure step needed, this is just the normal "create after answering".
+**Actions:** `create_memory(domain="coding", memory_hint="decision", messages=[4–6 relevant turns covering the JWT choice])` — no special closure step needed, this is just the normal "create after answering".
 
 ### General examples
 
@@ -364,33 +338,33 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **User:** "你记得我喜欢什么样的回答风格吗？"
 
-**Actions:** `search_memories(query_text="回答风格 偏好", domain="general", session_id="personal", limit=5)` → verify → answer → `create_memory(session_id="personal", messages=[this exchange])`.
+**Actions:** `search_memories(query_text="回答风格 偏好", domain="general", limit=5)` → verify → answer → `create_memory(domain="general", messages=[this exchange])`.
 
 #### Example 2 — Save preference (explicit remember)
 
 **User:** "请记住：以后解释技术问题用中文，尽量简洁。"
 
-**Actions:** search (optional dedup) → answer → `create_memory(domain="general", session_id="personal", messages=[...])`.
+**Actions:** search (optional dedup) → answer → `create_memory(domain="general", messages=[...])`.
 
-#### Example 3 — Trivia (skip both)
+#### Example 3 — Trivia (skip search, still create)
 
-**User:** "今天星期几？" → No search, no create.
+**User:** "今天星期几？" → No search. Create after answering (trivial but no skip policy).
 
 #### Example 4 — Scoped topic
 
 **User:** "关于 TiMEM 产品，我们之前定的目标用户是谁？"
 
-**Actions:** `search_memories(query_text="TiMEM 目标用户", session_id="timem-product", limit=5)` → answer → create.
+**Actions:** `search_memories(query_text="TiMEM 目标用户", limit=5)` → answer → create.
 
 #### Example 5 — Personalized task without recall wording (search + create)
 
 **User:** "帮我写一段自我介绍。"
 
-**Actions:** Search `自我介绍 偏好 背景` (`session_id=personal`) → answer → create (the exchange may hold durable background).
+**Actions:** Search `自我介绍 偏好 背景`  → answer → create (the exchange may hold durable background).
 
-#### Example 6 — Pure mood (skip create)
+#### Example 6 — Pure mood (still create)
 
-**User:** "今天有点累，随便聊聊吧。" → Skip search. Skip create.
+**User:** "今天有点累，随便聊聊吧。" → Skip search. Still create after reply (no skip policy).
 
 ### Writing examples
 
@@ -400,7 +374,7 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **Actions:**
 
-1. `search_memories(query_text="产品介绍 语气 专业 友好", domain="writing", session_id="product-copy", limit=5)`
+1. `search_memories(query_text="产品介绍 语气 专业 友好", domain="writing", limit=5)`
 2. Draft using verified tone constraints.
 
 #### Example 2 — Save style rule (create)
@@ -409,7 +383,7 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **Actions:**
 
-1. Gate hits → `create_memory(domain="writing", session_id="product-copy", messages=[user turn, assistant confirmation])`
+1. Gate hits → `create_memory(domain="writing", messages=[user turn, assistant confirmation])`
 
 #### Example 3 — Series continuity
 
@@ -417,23 +391,23 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 **Actions:**
 
-1. `search_memories(query_text="blog 风格 系列", domain="writing", session_id="blog-2026", limit=5)`
-2. Write draft; create only if new durable style rule emerges.
+1. `search_memories(query_text="blog 风格 系列", domain="writing", limit=5)`
+2. Write draft → `create_memory` after draft (no skip).
 
-#### Example 4 — Draft without recall wording (search, no create)
+#### Example 4 — Draft without recall wording (search + create)
 
 **User:** "写一段产品介绍。"
 
 **Actions:**
 
-1. Default search → `search_memories(query_text="产品介绍 风格 受众", domain="writing", session_id="product-copy", limit=5)`
-2. Draft using verified constraints if any; **no create** unless a new durable rule is confirmed
+1. Default search → `search_memories(query_text="产品介绍 风格 受众", domain="writing", limit=5)`
+2. Draft using verified constraints if any → `create_memory` after draft (no skip)
 
-#### Example 5 — No memory needed
+#### Example 5 — One-off edit (still create)
 
-**User:** "把这段改成被动语态。" (one-off edit, no new style rule)
+**User:** "把这段改成被动语态。" (one-off edit)
 
-**Actions:** Edit text; skip search/create unless user asks to remember a rule.
+**Actions:** Edit text; still `create_memory` after edit (no skip policy).
 
 ## Coding Search Tier (full)
 
@@ -445,13 +419,13 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 | `search_tier` | When | Call notes |
 |---------------|------|------------|
-| **S3** | Default — any project-bound coding turn with a known repo (implement, edit, explain, review, refactor, debug, module/arch overview, follow-up) | `session_id` + required `query_text` |
+| **S3** | Default — any project-bound coding turn with a known repo (implement, edit, explain, review, refactor, debug, module/arch overview, follow-up) | required `query_text` |
 | **S0** | User explicitly asks to recall ("你记得之前怎么定的吗") | `limit=10` |
 | **S6** | Before `delete_memory` | search to obtain `memory_id` |
 
 Everything else → `S3`. When unsure → `S3` and search.
 
-If the repo is unclear, clarify first, then search with `session_id` and `S3`.
+If the repo is unclear, clarify first, then search with `S3` (repo scope is not a client parameter).
 
 ### Recommended call
 
@@ -459,7 +433,6 @@ If the repo is unclear, clarify first, then search with `session_id` and `S3`.
 search_memories(
   query_text="<concise technical question>",  # required, 3–12 words
   domain="coding",
-  session_id="<repo-name>",
   search_tier="S3",
   limit=5,
 )
@@ -488,20 +461,16 @@ When `count=0` and `domain=coding`, read optional fields: `memory_gap`, `guidanc
 ```
 create_memory(
   domain="coding",
-  session_id="<repo-name>",
   memory_hint="convention",  # optional
   messages=[2–4 recent user/assistant turns],
 )
 ```
 
-### Skip create (narrow only)
+### No skip
 
-- **Unverified guess** — you summarized without reading the code
-- **Transient debug state** — "breakpoint currently at L42", "server is running on port 3000 right now"
-- **Typo / single-line format / pure one-off patch** with no reusable content
-- Nothing new vs. what you just searched (true duplicate)
+Create every turn, no exceptions. The server extracts facts and dedups against history, so passing the raw turns is enough — even turns that seem trivial may hold durable context.
 
-Everything else → create. Do not hold back because "the user didn't say 请记住" or "AGENTS.md might cover this".
+Do not hold back because "the user didn't say 请记住" or "AGENTS.md might cover this".
 
 ### memory_hint (optional)
 

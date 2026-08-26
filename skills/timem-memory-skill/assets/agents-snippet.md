@@ -2,13 +2,13 @@
 
 When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the **timem-memory-skill** skill (prefer [timem-skill](https://github.com/TiMEM-AI/timem-skill) `dist/standalone/`; `dist/full/` also fine).
 
-One skill covers three domains: `coding`, `general`, `writing`. Pick domain by scene:
+One skill covers three domains: `coding`, `general`, `writing`. Pick domain by scene — `session_id` is **not** a parameter (server schema has no such field; scope comes from your API key):
 
-| 场景 | domain | session_id |
-|------|--------|------------|
-| 代码/调试/架构 | `coding` | repo 名（必填）|
-| 个人/办公/通用 | `general` | `personal` 或 topic（必填）|
-| 文案/写作/风格 | `writing` | series 名（可选）|
+| 场景 | domain |
+|------|--------|
+| 代码/调试/架构 | `coding` |
+| 个人/办公/通用 | `general` |
+| 文案/写作/风格 | `writing` |
 
 ### Per-turn workflow (atomic MCP tools)
 
@@ -22,7 +22,7 @@ One skill covers three domains: `coding`, `general`, `writing`. Pick domain by s
 
 - Default: call `search_memories` on every turn; more search ≠ more create
 - Use `search_memories` / `create_memory` / `delete_memory` only; always pass `domain` explicitly
-- Skip only for typo/format/trivia
+- Search: skip only for typo/format/trivia; Create: no skip, every turn
 - AGENTS.md = team conventions; TiMEM = decisions + preferences + orientation
 
 Canonical packages: `dist/standalone/timem-memory-skill/` (recommended) or `dist/full/timem-memory-skill/` (source: `skills/timem-memory-skill/`)

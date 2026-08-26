@@ -8,13 +8,13 @@
 
 | `search_tier` | When | Call notes |
 |---------------|------|------------|
-| **S3** | Default — any project-bound coding turn with a known repo (implement, edit, explain, review, refactor, debug, module/arch overview, follow-up) | `session_id` + required `query_text` |
+| **S3** | Default — any project-bound coding turn with a known repo (implement, edit, explain, review, refactor, debug, module/arch overview, follow-up) | required `query_text` |
 | **S0** | User explicitly asks to recall ("你记得之前怎么定的吗") | `limit=10` |
 | **S6** | Before `delete_memory` | search to obtain `memory_id` |
 
 Everything else → `S3`. When unsure → `S3` and search.
 
-If the repo is unclear, clarify first, then search with `session_id` and `S3`.
+If the repo is unclear, clarify first, then search with `S3` (repo scope is not a client parameter).
 
 ## Recommended call
 
@@ -22,7 +22,6 @@ If the repo is unclear, clarify first, then search with `session_id` and `S3`.
 search_memories(
   query_text="<concise technical question>",  # required, 3–12 words
   domain="coding",
-  session_id="<repo-name>",
   search_tier="S3",
   limit=5,
 )
