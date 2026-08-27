@@ -36,6 +36,23 @@ run_trae_installer_with_appdata() {
     bash "$REPO_ROOT/install-all.sh" --agent trae --api-key 'test-key-12345678' --skip-skills --quiet > /dev/null
 }
 
+run_trae_installer_with_platform() {
+  local profile_dir="$1" platform="$2"
+  local shim_dir="$TEST_ROOT/uname-$platform"
+
+  mkdir -p "$shim_dir"
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'if [ "${1:-}" = "-s" ]; then' \
+    "  printf '%s\\n' '$platform'" \
+    'else' \
+    '  /usr/bin/uname "$@"' \
+    'fi' > "$shim_dir/uname"
+  chmod +x "$shim_dir/uname"
+
+  HOME="$profile_dir" CODEX_HOME= APPDATA= TRAE_MCP_CONFIG= PATH="$shim_dir:$PATH" TIMEM_API_KEY='test-key-12345678' \
+    bash "$REPO_ROOT/install-all.sh" --agent trae --api-key 'test-key-12345678' --skip-skills --quiet > /dev/null
+}
+
 run_openclaw_installer_with_workspace() {
   local profile_dir="$1" workspace_dir="$2"
   HOME="$profile_dir" CODEX_HOME= OPENCLAW_WORKSPACE_DIR="$workspace_dir" TIMEM_API_KEY='test-key-12345678' \
@@ -79,6 +96,23 @@ test_codex_home_override() {
   cmp -s "$instruction_file.expected" "$instruction_file"
   grep -q 'TiMEM-SPACE' "$config_dir/config.toml"
   test ! -e "$profile_dir/.codex/AGENTS.md"
+}
+
+test_codex_reuses_existing_agent_md_variant() {
+  local profile_dir="$TEST_ROOT/codex-agent-md-profile"
+  local config_dir="$profile_dir/.codex"
+  local instruction_file="$config_dir/agent.MD"
+
+  mkdir -p "$config_dir"
+  printf '# existing codex config\n' > "$config_dir/config.toml"
+  printf '# Existing Agent instructions\n' > "$instruction_file"
+  printf '# Existing Agent instructions\n%s\n' "$INSTRUCTION" > "$instruction_file.expected"
+
+  run_installer "$profile_dir" codex
+  run_installer "$profile_dir" codex
+
+  cmp -s "$instruction_file.expected" "$instruction_file"
+  test ! -e "$config_dir/AGENTS.md"
 }
 
 test_cursor_user_rule_injection() {
@@ -158,6 +192,32 @@ test_trae_legacy_state_detects_current_mcp_target() {
 
   test -f "$config_file"
   grep -q '"TiMEM-SPACE"' "$config_file"
+}
+
+test_trae_linux_platform_path() {
+  local profile_dir="$TEST_ROOT/trae-linux-profile"
+  local config_file="$profile_dir/.config/Trae/User/mcp.json"
+
+  mkdir -p "$(dirname "$config_file")"
+
+  run_trae_installer_with_platform "$profile_dir" Linux
+  run_trae_installer_with_platform "$profile_dir" Linux
+
+  test -f "$config_file"
+  test "$(grep -c '"TiMEM-SPACE"' "$config_file")" -eq 1
+}
+
+test_trae_macos_platform_path() {
+  local profile_dir="$TEST_ROOT/trae-macos-profile"
+  local config_file="$profile_dir/Library/Application Support/Trae/User/mcp.json"
+
+  mkdir -p "$(dirname "$config_file")"
+
+  run_trae_installer_with_platform "$profile_dir" Darwin
+  run_trae_installer_with_platform "$profile_dir" Darwin
+
+  test -f "$config_file"
+  test "$(grep -c '"TiMEM-SPACE"' "$config_file")" -eq 1
 }
 
 test_trae_global_user_rule_injection() {
@@ -306,11 +366,14 @@ test_skip_agent_instructions() {
 
 test_codex_instruction_injection
 test_codex_home_override
+test_codex_reuses_existing_agent_md_variant
 test_cursor_user_rule_injection
 test_claude_marker_preserves_file
 test_claude_code_uses_user_mcp_config
 test_trae_uses_current_user_mcp_config
 test_trae_legacy_state_detects_current_mcp_target
+test_trae_linux_platform_path
+test_trae_macos_platform_path
 test_trae_global_user_rule_injection
 test_qoder_instruction_injection
 test_qoder_config_dir_override

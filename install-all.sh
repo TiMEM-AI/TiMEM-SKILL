@@ -550,8 +550,10 @@ resolve_agent_instruction_file() {
   local -a candidates
 
   case "$instruction_file" in
-    AGENTS.md) candidates=("AGENTS.md" "AGENT.md" "agents.md" "agent.md") ;;
-    CLAUDE.md) candidates=("CLAUDE.md" "claude.md") ;;
+    # Linux 文件系统通常大小写敏感：优先复用已有 Agent 指令文件，
+    # 避免仅因扩展名使用 .MD 而额外创建一个 AGENTS.md。
+    AGENTS.md) candidates=("AGENTS.md" "AGENTS.MD" "AGENT.md" "AGENT.MD" "agents.md" "agents.MD" "agent.md" "agent.MD") ;;
+    CLAUDE.md) candidates=("CLAUDE.md" "CLAUDE.MD" "claude.md" "claude.MD") ;;
     *) candidates=("$instruction_file") ;;
   esac
 
