@@ -31,9 +31,9 @@
 1. `search_memories(query_text="auth 架构 决策", domain="coding", search_tier="S0", limit=10)`
 2. Answer from verified memories only → `create_memory` with this exchange
 
-### Example 4 — Typo fix (skip search, still create)
+### Example 4 — Typo fix (search + create)
 
-**User:** "这个变量名拼错了，改一下" → No search. Create after fix (the exchange may hold reusable convention).
+**User:** "这个变量名拼错了，改一下" → Search anyway. Create after fix (the exchange may hold reusable convention).
 
 ### Example 5 — Task with a conclusion (search + create)
 
@@ -55,9 +55,9 @@
 
 **Actions:** search (optional dedup) → answer → `create_memory(domain="general", messages=[...])`.
 
-### Example 3 — Trivia (skip search, still create)
+### Example 3 — Trivia (search + create)
 
-**User:** "今天星期几？" → No search. Create after answering (trivial but no skip policy).
+**User:** "今天星期几？" → Search anyway. Create after answering (trivial but still create).
 
 ### Example 4 — Scoped topic
 
@@ -71,9 +71,9 @@
 
 **Actions:** Search `自我介绍 偏好 背景`  → answer → create (the exchange may hold durable background).
 
-### Example 6 — Pure mood (still create)
+### Example 6 — Pure mood (search + create)
 
-**User:** "今天有点累，随便聊聊吧。" → Skip search. Still create after reply (no skip policy).
+**User:** "今天有点累，随便聊聊吧。" → Search anyway. Still create after reply (no skip policy).
 
 ## Writing examples
 

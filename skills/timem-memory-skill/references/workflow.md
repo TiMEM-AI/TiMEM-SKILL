@@ -19,8 +19,6 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 1. `search_memories(query_text=<3–12 words>, domain="general", limit=5)`
 2. Verify hits against the current conversation; abstain if stale or contradictory.
 
-**Skip search** only for: pure trivia (e.g. "今天星期几"); user explicitly said "别搜"; a previous call this turn already returned what you need.
-
 **Do not under-call** — "I can answer directly" or "this is work not about the person" is not a skip reason.
 
 ### Create
@@ -50,8 +48,6 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
    )
    ```
 4. **Apply** — use verified constraints in the draft; abstain if hits are stale.
-
-**Skip search** only for: one-off grammar/punctuation with no reusable style context.
 
 **Do not under-call** — "I can draft without tools" is not a skip reason when style/audience may matter.
 

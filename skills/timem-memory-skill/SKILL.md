@@ -2,12 +2,18 @@
 name: timem-memory-skill
 description: >-
   TiMEM long-term memory skill covering coding, general, and writing domains.
-  One skill replaces timem-coding-memory + timem-general-memory + timem-writing-memory.
   AUTO on EVERY turn when TiMEM MCP is connected: call search_memories BEFORE
   generating reply, then create_memory AFTER generating reply. No exceptions,
   no skip. If user message contains "记", MUST call create_memory. Pick domain
   by scene: coding (repo/debug/architecture), general (personal/office/durable
   facts), writing (copy/tone/audience/style). Ambiguous: classify_memory_scene.
+metadata:
+  author: timem-org
+  version: "1.0.1"
+  display_name: 太忆空间 记忆连接技
+  display_name_en: TiMEM Memory Skill
+  description_zh: '请访问：https://space.timem.cloud/ 你的所有 AI 助手， 终于共用同一个大脑 说一次"记住"，换多少个 Agent 都记得你。 太忆空间让你的记忆随你走。'
+  description_en: 'Please visit: https://space.timem.cloud/. All your AI assistants finally share one single brain. Say "remember" once, and no matter how many Agents you switch to, they will remember you. TiMEM-Space lets your memories travel with you.'
 ---
 
 # TiMEM Memory Skill
@@ -112,6 +118,8 @@ For business repos: [assets/agents-snippet.md](assets/agents-snippet.md)
 ## Changelog
 
 - 0.3.1 (2026-08-26): Remove all `session_id` requirements — server schema has no such field. Examples and parameter tables updated accordingly.
-- 0.3.0 (2026-08-20): Remove all create skip conditions — create every turn, no exceptions. Server dedup handles trivial turns. Search skip conditions retained (typo/trivia/别搜).
-- 0.2.0 (2026-08-19): Merge timem-coding-memory + timem-general-memory + timem-writing-memory into single skill `timem-memory-skill`. One skill, three domains, domain selection by scene.
-- 0.1.0 (2026-08-18): Initial individual skill versions (coding, general, writing).
+- 1.0.1 (2026-08-30): Add metadata block (author/version/display_name/descriptions); unify versioning; clean legacy merge references.
+- 1.0.0 (2026-08-20): Remove all create skip conditions — create every turn, no exceptions. Server dedup handles trivial turns.
+- 0.2.0 (2026-08-19): Introduce three-domain selection (coding / general / writing) within the single memory skill.
+- 0.1.0 (2026-08-18): Initial version of the memory skill.
+

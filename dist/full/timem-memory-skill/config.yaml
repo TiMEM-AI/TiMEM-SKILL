@@ -1,5 +1,6 @@
 name: timem-memory-skill
-version: 0.3.1
+version: 1.0.1
+
 description: >
   TiMEM long-term memory skill covering coding, general, and writing domains.
   Auto on every turn when TiMEM MCP is connected: search_memories before reply,

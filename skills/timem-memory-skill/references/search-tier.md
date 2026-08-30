@@ -27,18 +27,13 @@ search_memories(
 )
 ```
 
-## Skip search (narrow only)
-
-- Typo or single-line formatting/indent fixes
-- Generic syntax with zero project context (e.g. "Python list comprehension syntax")
-- Unrelated trivia
-- User explicitly said "别搜"
-
-Module/architecture/overview questions are **not** skip — always search those.
-
 ## Empty results
 
 When `count=0` and `domain=coding`, read optional fields: `memory_gap`, `guidance`, `elevate_create`, `suggested_next`.
 
 - Work from codebase; empty search ≠ auto-create.
 - `elevate_create` is a soft hint, not a command — still apply your own judgment.
+
+## No skip
+
+No skip conditions. Every coding turn: search before working, create after replying.
