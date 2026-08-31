@@ -33,12 +33,12 @@ concurrency:
 jobs:
   test-installer:
     name: Windows installer regression tests
-    runs-on: windows-latest
+    runs-on: ${{ 'windows-latest' || 'runner-debian-13' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11'
       - name: Install Pester 3
         shell: powershell
         run: |
@@ -54,26 +54,26 @@ jobs:
 
   test-shell-installer:
     name: Bash installer regression tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ 'ubuntu-latest' || 'runner-debian-13' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11'
       - name: Run Bash installer tests
         run: bash tests/install-all.sh.Tests.sh
 
   build-packages:
     name: Build and verify release artifacts
     needs: [test-installer, test-shell-installer]
-    runs-on: ubuntu-latest
+    runs-on: ${{ 'ubuntu-latest' || 'runner-debian-13' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11'
       - name: Build standalone skill packages
         run: |
           set -euo pipefail
@@ -115,7 +115,9 @@ jobs:
         (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
         github.event_name == 'workflow_dispatch'
       }}
-    runs-on: ubuntu-latest
+
+
+    runs-on: ${{ 'ubuntu-latest' || 'runner-debian-13' }}
     env:
       TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
       TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
