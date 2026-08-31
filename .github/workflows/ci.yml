@@ -88,7 +88,9 @@ jobs:
             skill_id=$(basename "${skill_dir}")
             (cd dist/standalone && zip -qr "${skill_id}.zip" "${skill_id}")
             unzip -t "dist/standalone/${skill_id}.zip" >/dev/null
-            unzip -l "dist/standalone/${skill_id}.zip" | grep -q "${skill_id}/SKILL.md"
+            # 不用 grep -q：它匹配后立即关闭管道，会让 unzip 收到 SIGPIPE，
+            # 在 set -o pipefail 下导致步骤以 141 失败。去掉 -q 让 grep 读完整个列表。
+            unzip -l "dist/standalone/${skill_id}.zip" | grep "${skill_id}/SKILL.md" >/dev/null
           done
       - name: Build and verify full release ZIP
         id: release
@@ -100,8 +102,10 @@ jobs:
           release_zip="dist/release/timem-skill-${version}.zip"
           test -f "${release_zip}"
           unzip -t "${release_zip}" >/dev/null
-          unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.ps1'
-          unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.sh'
+          # 注意：此处不能用 grep -q，否则 grep 提前退出会让 unzip 收到 SIGPIPE，
+          # 在 set -o pipefail 下使步骤以退出码 141 失败。
+          unzip -l "${release_zip}" | grep 'timem-skill/install-all.ps1' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/install-all.sh' >/dev/null
           unzip -p "${release_zip}" timem-skill/install-all.ps1 | cmp -s install-all.ps1 -
           unzip -p "${release_zip}" timem-skill/install-all.sh | cmp -s install-all.sh -
           cp "${release_zip}" dist/release/timem-skill-latest.zip
