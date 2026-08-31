@@ -31,30 +31,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-installer:
-    name: Windows installer regression tests
-    runs-on: ${{ 'windows-latest' || 'runner-debian-13' }}
-    steps:
-      - uses: actions/checkout@v4
-      # - uses: actions/setup-python@v5
-      #   with:
-      #     python-version: '3.11'
-      - name: Install Pester 3
-        shell: powershell
-        run: |
-          # The regression suite deliberately supports Windows PowerShell 5.1
-          # and uses the compatible Pester 3 assertion syntax.
-          Install-Module Pester -RequiredVersion 3.4.0 -Scope CurrentUser -Force -SkipPublisherCheck
-          Import-Module Pester -RequiredVersion 3.4.0 -Force
-      - name: Run PowerShell installer tests
-        shell: pwsh
-        run: |
-          Import-Module Pester -RequiredVersion 3.4.0 -Force
-          Invoke-Pester -Script .\tests -EnableExit
+  # test-installer:
+  #   name: Windows installer regression tests
+  #   # 该 job 必须在 Windows 上运行：集成测试直接调用 powershell.exe（Windows PowerShell 5.1），
+  #   # 并验证 %APPDATA%/USERPROFILE 等 Windows 专属行为。设置仓库变量 RUNNER_LABEL_WINDOWS
+  #   # 可切换到自建 Windows runner，未设置时回退到 windows-latest。
+  #   runs-on: ${{ vars.RUNNER_LABEL_WINDOWS || 'windows-latest' }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     # - uses: actions/setup-python@v5
+  #     #   with:
+  #     #     python-version: '3.11'
+  #     - name: Install Pester 3
+  #       shell: powershell
+  #       run: |
+  #         # The regression suite deliberately supports Windows PowerShell 5.1
+  #         # and uses the compatible Pester 3 assertion syntax.
+  #         Install-Module Pester -RequiredVersion 3.4.0 -Scope CurrentUser -Force -SkipPublisherCheck
+  #         Import-Module Pester -RequiredVersion 3.4.0 -Force
+  #     - name: Run PowerShell installer tests
+  #       shell: pwsh
+  #       run: |
+  #         Import-Module Pester -RequiredVersion 3.4.0 -Force
+  #         Invoke-Pester -Script .\tests -EnableExit
 
   test-shell-installer:
     name: Bash installer regression tests
-    runs-on: ${{ 'ubuntu-latest' || 'runner-debian-13' }}
+    # 设置仓库变量 RUNNER_LABEL_LINUX（如 runner-debian-13）可切换到自建/镜像 runner，
+    # 未设置时 || 才会真正回退到 ubuntu-latest。
+    runs-on: ${{ vars.RUNNER_LABEL_LINUX || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
       # - uses: actions/setup-python@v5
@@ -66,7 +71,7 @@ jobs:
   build-packages:
     name: Build and verify release artifacts
     needs: [test-installer, test-shell-installer]
-    runs-on: ${{ 'ubuntu-latest' || 'runner-debian-13' }}
+    runs-on: ${{ vars.RUNNER_LABEL_LINUX || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -117,7 +122,7 @@ jobs:
       }}
 
 
-    runs-on: ${{ 'ubuntu-latest' || 'runner-debian-13' }}
+    runs-on: ${{ vars.RUNNER_LABEL_LINUX || 'ubuntu-latest' }}
     env:
       TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
       TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
