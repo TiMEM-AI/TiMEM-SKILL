@@ -69,9 +69,19 @@ jobs:
         run: bash tests/install-all.sh.Tests.sh
 
   build-packages:
-    name: Build and verify release artifacts
+    name: Build, verify and publish release artifacts
     needs: [test-installer, test-shell-installer]
     runs-on: ${{ vars.RUNNER_LABEL_LINUX || 'ubuntu-latest' }}
+    # 构建与发布合并在同一个 job 内：自建 runner 的 artifact 中转服务不可用（ECONNREFUSED），
+    # 不再依赖 upload/download-artifact，产物直接留在当前工作目录内发布。
+    # 发布步骤仅在 push 到 main 或手动触发时执行，PR 只做构建验证。
+    env:
+      TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+      TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+      TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
+      TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
+      COS_PREFIX: timem/skills/standalone
+      RELEASE_COS_PREFIX: releases
     steps:
       - uses: actions/checkout@v4
         with:
@@ -110,38 +120,19 @@ jobs:
           unzip -p "${release_zip}" timem-skill/install-all.sh | cmp -s install-all.sh -
           cp "${release_zip}" dist/release/timem-skill-latest.zip
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: timem-skill-packages-${{ github.sha }}
-          path: dist/
-          if-no-files-found: error
-
-  publish-to-cos:
-    name: Publish verified packages to COS
-    needs: build-packages
-    if: >-
-      ${{
-        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-        github.event_name == 'workflow_dispatch'
-      }}
-
-
-    runs-on: ${{ vars.RUNNER_LABEL_LINUX || 'ubuntu-latest' }}
-    env:
-      TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
-      TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
-      TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
-      TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
-      COS_PREFIX: timem/skills/standalone
-      RELEASE_COS_PREFIX: releases
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: timem-skill-packages-${{ github.sha }}
-          path: dist
-      - run: pip install cos-python-sdk-v5
+      - name: Install COS SDK
+        if: >-
+          ${{
+            (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+            github.event_name == 'workflow_dispatch'
+          }}
+        run: pip install cos-python-sdk-v5
       - name: Upload standalone and release packages
+        if: >-
+          ${{
+            (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+            github.event_name == 'workflow_dispatch'
+          }}
         run: |
           set -euo pipefail
           : "${TENCENT_SECRET_ID:?TENCENT_SECRET_ID secret is required}"
