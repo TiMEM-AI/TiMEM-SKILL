@@ -26,7 +26,7 @@ unzip timem-skill.zip
 cd timem-skill && bash install-all.sh --api-key YOUR_TIMEM_API_KEY
 ```
 
-> **Windows (PowerShell):** Download and unzip, then run `.\install-all.ps1 -ApiKey YOUR_TIMEM_API_KEY -Agent codex`; `-Agent` accepts comma-separated agents, and `TIMEM_AGENT` remains supported.
+> **Windows (PowerShell):** For a one-line install, run `$env:TIMEM_API_KEY='YOUR_TIMEM_API_KEY'; $env:TIMEM_AGENT='codex'; irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1 | iex`. For the ZIP package, run `.\install-all.ps1 -ApiKey YOUR_TIMEM_API_KEY -Agent codex`; `-Agent` accepts comma-separated agents, and `TIMEM_AGENT` remains supported.
 
 The installers maintain TiMEM instructions only at verified user-global or agent-workspace targets:
 

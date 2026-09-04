@@ -25,7 +25,7 @@ unzip timem-skill.zip
 cd timem-skill && bash install-all.sh --api-key 你的_TIMEM_API_KEY
 ```
 
-> **Windows (PowerShell)：** 下载解压后运行 `.\install-all.ps1 -ApiKey 你的_TIMEM_API_KEY -Agent codex`；`-Agent` 支持逗号分隔多个 agent，也可用环境变量 `TIMEM_AGENT`。
+> **Windows (PowerShell)：** 在线一键安装运行 `$env:TIMEM_API_KEY='你的_TIMEM_API_KEY'; $env:TIMEM_AGENT='codex'; irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1 | iex`。使用 ZIP 包时运行 `.\install-all.ps1 -ApiKey 你的_TIMEM_API_KEY -Agent codex`；`-Agent` 支持逗号分隔多个 agent，也可用环境变量 `TIMEM_AGENT`。
 
 安装器只会在已核验的用户级或 Agent workspace 指令目标中维护 TiMEM 工作流：
 

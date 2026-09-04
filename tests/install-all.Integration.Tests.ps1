@@ -8,8 +8,16 @@ function Invoke-InstallAllInSandbox {
   )
 
   $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
+  $coreScriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.core.ps1'
   $escapedPath = $scriptPath.Replace("'", "''")
-  $command = "Get-Content -Raw -Encoding UTF8 -LiteralPath '$escapedPath' | Invoke-Expression"
+  $escapedCoreScriptPath = $coreScriptPath.Replace("'", "''")
+  $command = @"
+function Invoke-RestMethod {
+  param([string]`$Uri)
+  return [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes('$escapedCoreScriptPath'))
+}
+Get-Content -Raw -Encoding UTF8 -LiteralPath '$escapedPath' | Invoke-Expression
+"@
   $environment = @{
     USERPROFILE = Join-Path $TestRoot 'profile'
     APPDATA = Join-Path $TestRoot 'appdata'
@@ -334,6 +342,7 @@ Describe 'install-all.ps1 Windows functional behavior' {
       ($codexConfig -match 'TiMEM-SPACE') | Should Be $true
       $desktopAfter | Should Be $seedDesktopConfig
       ($firstRun.Output -match 'claude-desktop') | Should Be $true
+      ($firstRun.Output -match '成功:\s+1\s+\|\s+失败:\s+0\s+\|\s+跳过:\s+8') | Should Be $true
     } finally {
       if (Test-Path -LiteralPath $testRoot) {
         [IO.Directory]::Delete($testRoot, $true)

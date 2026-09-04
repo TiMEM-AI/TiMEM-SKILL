@@ -1,6 +1,7 @@
 Describe 'COS release workflow' {
   $root = Join-Path $PSScriptRoot '..'
   $workflow = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path (Join-Path (Join-Path $root '.github') 'workflows') 'ci.yml')
+  $buildScript = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path (Join-Path $root 'scripts') 'build-release.sh')
   $uploadScript = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path (Join-Path $root 'scripts') 'upload_cos.py')
 
   It 'runs Windows installer tests before the COS publishing job' {
@@ -19,6 +20,7 @@ Describe 'COS release workflow' {
 
   It 'is triggered when a release artifact or installer changes' {
     $workflow | Should Match 'install-all\.ps1'
+    $workflow | Should Match 'install-all\.core\.ps1'
     $workflow | Should Match 'install-all\.sh'
     $workflow | Should Match 'README(_zh)?\.md'
     $workflow | Should Match 'scripts/\*\*'
@@ -29,6 +31,8 @@ Describe 'COS release workflow' {
     $workflow | Should Match 'timem-skill-latest\.zip'
     $workflow | Should Match 'scripts/upload_cos\.py'
     $workflow | Should Match 'timem-skill/install-all\.sh.*cmp -s install-all\.sh'
+    $workflow | Should Match 'timem-skill/install-all\.core\.ps1.*cmp -s install-all\.core\.ps1'
+    $buildScript | Should Match '"install-all\.core\.ps1"'
     $uploadScript | Should Match 'RELEASE_COS_PREFIX'
     $uploadScript | Should Match 'timem-skill-latest\.zip'
     $uploadScript | Should Match 'EnableMD5=True'
