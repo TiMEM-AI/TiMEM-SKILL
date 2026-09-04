@@ -215,7 +215,11 @@ if [[ ! -f "$ZIP_PATH" ]]; then
 fi
 
 ZIP_SIZE=$(du -h "$ZIP_PATH" | cut -f1)
-ZIP_CONTENTS=$(zip -l "$ZIP_PATH" 2>/dev/null | tail -n +4 | head -n -2 | wc -l || python3 -c "import zipfile; print(len(zipfile.ZipFile('$ZIP_PATH').namelist()))")
+
+# 统计条目数：直接用 python3 标准库读 zip 中央目录，
+# 跨平台一致，不依赖 zip -l / unzip -l 的输出格式，
+# 也避免 head -n 负数参数（busybox 不支持）和 grep -q 提前退出引发的 SIGPIPE。
+ZIP_CONTENTS=$(python3 -c "import zipfile; print(len(zipfile.ZipFile('$ZIP_PATH').namelist()))")
 
 ok "打包成功!"
 echo ""
