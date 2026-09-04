@@ -4,7 +4,7 @@
 .DESCRIPTION
   为所有已检测的 Agent 工具安装 TiMEM Skills + MCP 配置 + 全局指令
 .USAGE
-  $env:TIMEM_API_KEY = "tmk_xxx"; irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1 | iex
+  $env:TIMEM_API_KEY = "tmk_xxx"; (irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1).TrimStart([char]0xFEFF) | iex
   .\install-all.ps1 -ApiKey "tmk_xxx" -Agent "codex"
   .\install-all.ps1 -ApiKey "tmk_xxx" -Agent "codex" -SkipAgentInstructions
 #>
