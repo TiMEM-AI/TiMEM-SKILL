@@ -14,14 +14,13 @@
 
 Everything else → `S3`. When unsure → `S3` and search.
 
-If the repo is unclear, clarify first, then search with `S3` (repo scope is not a client parameter).
+If the repo is unclear, clarify first, then search with `S3`.
 
 ## Recommended call
 
 ```
 search_memories(
   query_text="<concise technical question>",  # required, 3–12 words
-  domain="coding",
   search_tier="S3",
   limit=5,
 )
@@ -29,7 +28,7 @@ search_memories(
 
 ## Empty results
 
-When `count=0` and `domain=coding`, read optional fields: `memory_gap`, `guidance`, `elevate_create`, `suggested_next`.
+When `count=0`, read optional fields: `memory_gap`, `guidance`, `elevate_create`, `suggested_next`.
 
 - Work from codebase; empty search ≠ auto-create.
 - `elevate_create` is a soft hint, not a command — still apply your own judgment.
