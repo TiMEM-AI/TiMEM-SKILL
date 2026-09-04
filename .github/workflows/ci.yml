@@ -9,7 +9,6 @@ on:
       - 'scripts/**'
       - 'install-all.sh'
       - 'install-all.ps1'
-      - 'install-all.core.ps1'
       - 'README.md'
       - 'README_zh.md'
       - 'LICENSE'
@@ -21,7 +20,6 @@ on:
       - 'scripts/**'
       - 'install-all.sh'
       - 'install-all.ps1'
-      - 'install-all.core.ps1'
       - 'README.md'
       - 'README_zh.md'
       - 'LICENSE'
@@ -72,7 +70,7 @@ jobs:
 
   build-packages:
     name: Build, verify and publish release artifacts
-    needs: [test-installer, test-shell-installer]
+    needs: [test-shell-installer]
     runs-on: ${{ vars.RUNNER_LABEL_LINUX || 'ubuntu-latest' }}
     # 构建与发布合并在同一个 job 内：自建 runner 的 artifact 中转服务不可用（ECONNREFUSED），
     # 不再依赖 upload/download-artifact，产物直接留在当前工作目录内发布。
@@ -122,7 +120,6 @@ jobs:
           unzip -l "${release_zip}" | grep 'timem-skill/install-all.ps1' >/dev/null
           unzip -l "${release_zip}" | grep 'timem-skill/install-all.sh' >/dev/null
           unzip -p "${release_zip}" timem-skill/install-all.ps1 | cmp -s install-all.ps1 -
-          unzip -p "${release_zip}" timem-skill/install-all.core.ps1 | cmp -s install-all.core.ps1 -
           unzip -p "${release_zip}" timem-skill/install-all.sh | cmp -s install-all.sh -
           cp "${release_zip}" dist/release/timem-skill-latest.zip
           echo "version=${version}" >> "${GITHUB_OUTPUT}"

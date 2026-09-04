@@ -8,16 +8,8 @@ function Invoke-InstallAllInSandbox {
   )
 
   $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
-  $coreScriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.core.ps1'
   $escapedPath = $scriptPath.Replace("'", "''")
-  $escapedCoreScriptPath = $coreScriptPath.Replace("'", "''")
-  $command = @"
-function Invoke-RestMethod {
-  param([string]`$Uri)
-  return [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes('$escapedCoreScriptPath'))
-}
-Get-Content -Raw -Encoding UTF8 -LiteralPath '$escapedPath' | Invoke-Expression
-"@
+  $command = "Get-Content -Raw -Encoding UTF8 -LiteralPath '$escapedPath' | Invoke-Expression"
   $environment = @{
     USERPROFILE = Join-Path $TestRoot 'profile'
     APPDATA = Join-Path $TestRoot 'appdata'

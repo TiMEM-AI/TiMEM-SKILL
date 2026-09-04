@@ -23,7 +23,7 @@ TiMEM-SKILL README 仅承诺 Agent Skills 可移植到 Cursor、Claude Code、Co
 | Claude Desktop | MCP-only | MCP 已覆盖 | 账户级 Settings → Instructions for Claude；无公开本地规则文件契约 | 不注入本地指令 |
 | Qoder CLI | **未列入 TiMEM 上游矩阵** | 本地额外支持 | `${QODER_CONFIG_DIR:-~/.qoder}/AGENTS.md` | 平台入口可靠，但 TiMEM 官方支持状态待上游确认 |
 
-当前工作树的客户端矩阵位于 [install-all.core.ps1](../install-all.core.ps1#L57-L64)；它比上游多出 `qoder` 这一项本地扩展。TRAE 的 MCP 会优先解析当前 AppData 位置，指令则由安装器自有的全局规则文件维护。
+当前工作树的客户端矩阵位于 [install-all.ps1](../install-all.ps1#L57-L64)；它比上游多出 `qoder` 这一项本地扩展。TRAE 的 MCP 会优先解析当前 AppData 位置，指令则由安装器自有的全局规则文件维护。
 
 ## 逐项依据与安全自动化判断
 

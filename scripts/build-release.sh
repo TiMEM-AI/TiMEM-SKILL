@@ -4,7 +4,7 @@
 #
 # 功能:
 #   - 从 git tag 或 commit hash 读取版本号
-#   - 将 skills/ + 安装器启动脚本/核心脚本 + README.md 打包为 ZIP
+#   - 将 skills/ + install-all.sh + install-all.ps1 + README.md 打包为 ZIP
 #   - 输出到 dist/release/timem-skill-{version}.zip
 #   - 幂等: 重复运行会覆盖同名 ZIP
 #
@@ -95,7 +95,6 @@ fi
 REQUIRED_FILES=(
   "install-all.sh"
   "install-all.ps1"
-  "install-all.core.ps1"
   "README.md"
 )
 
