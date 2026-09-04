@@ -28,32 +28,29 @@ on:
 
 concurrency:
   group: skill-ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Do not interrupt an in-flight publication after version objects have begun
+  # uploading. Pull requests use distinct refs, so they still do not overlap.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # test-installer:
-  #   name: Windows installer regression tests
-  #   # 该 job 必须在 Windows 上运行：集成测试直接调用 powershell.exe（Windows PowerShell 5.1），
-  #   # 并验证 %APPDATA%/USERPROFILE 等 Windows 专属行为。设置仓库变量 RUNNER_LABEL_WINDOWS
-  #   # 可切换到自建 Windows runner，未设置时回退到 windows-latest。
-  #   runs-on: ${{ vars.RUNNER_LABEL_WINDOWS || 'windows-latest' }}
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     # - uses: actions/setup-python@v5
-  #     #   with:
-  #     #     python-version: '3.11'
-  #     - name: Install Pester 3
-  #       shell: powershell
-  #       run: |
-  #         # The regression suite deliberately supports Windows PowerShell 5.1
-  #         # and uses the compatible Pester 3 assertion syntax.
-  #         Install-Module Pester -RequiredVersion 3.4.0 -Scope CurrentUser -Force -SkipPublisherCheck
-  #         Import-Module Pester -RequiredVersion 3.4.0 -Force
-  #     - name: Run PowerShell installer tests
-  #       shell: pwsh
-  #       run: |
-  #         Import-Module Pester -RequiredVersion 3.4.0 -Force
-  #         Invoke-Pester -Script .\tests -EnableExit
+  test-installer:
+    name: Windows installer regression tests
+    # The integration suite invokes Windows PowerShell 5.1 and verifies the
+    # BOM-safe advertised bootstrap. A repository variable can select a
+    # self-hosted Windows runner; otherwise GitHub-hosted Windows is used.
+    runs-on: ${{ vars.RUNNER_LABEL_WINDOWS || 'windows-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pester 3
+        shell: powershell
+        run: |
+          Install-Module Pester -RequiredVersion 3.4.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          Import-Module Pester -RequiredVersion 3.4.0 -Force
+      - name: Run PowerShell installer tests
+        shell: pwsh
+        run: |
+          Import-Module Pester -RequiredVersion 3.4.0 -Force
+          Invoke-Pester -Script .\tests -EnableExit
 
   test-shell-installer:
     name: Bash installer regression tests
@@ -65,12 +62,14 @@ jobs:
       # - uses: actions/setup-python@v5
       #   with:
       #     python-version: '3.11'
+      - name: Run COS artifact contract tests
+        run: python -m unittest tests.test_cos_artifacts tests.test_cos_upload_plan
       - name: Run Bash installer tests
         run: bash tests/install-all.sh.Tests.sh
 
   build-packages:
     name: Build, verify and publish release artifacts
-    needs: [test-shell-installer]
+    needs: [test-installer, test-shell-installer]
     runs-on: ${{ vars.RUNNER_LABEL_LINUX || 'ubuntu-latest' }}
     # 构建与发布合并在同一个 job 内：自建 runner 的 artifact 中转服务不可用（ECONNREFUSED），
     # 不再依赖 upload/download-artifact，产物直接留在当前工作目录内发布。
@@ -81,7 +80,9 @@ jobs:
       TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
       TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
       COS_PREFIX: timem/skills/standalone
+      COS_FULL_PREFIX: timem/skills/full/timem-memory-skill
       RELEASE_COS_PREFIX: releases
+      INSTALLER_COS_PREFIX: installers
       # 飞书机器人 webhook 存于仓库 Secret（仓库设置 → Secrets），不要硬编码到工作流里。
       # webhook URL 等同于凭证，泄露后任何人都能往群里发消息；若曾明文提交过，需在飞书群设置里重新生成。
       FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
@@ -109,7 +110,7 @@ jobs:
         id: release
         run: |
           set -euo pipefail
-          version=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+          version=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short=12 HEAD)
           version="${version#v}"
           bash scripts/build-release.sh --version "${version}"
           release_zip="dist/release/timem-skill-${version}.zip"
@@ -119,9 +120,22 @@ jobs:
           # 在 set -o pipefail 下使步骤以退出码 141 失败。
           unzip -l "${release_zip}" | grep 'timem-skill/install-all.ps1' >/dev/null
           unzip -l "${release_zip}" | grep 'timem-skill/install-all.sh' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/dist/full/timem-memory-skill/SKILL.md' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/dist/standalone/timem-coding-memory/SKILL.md' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/dist/standalone/timem-general-memory/SKILL.md' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/skills/timem-writing-memory/SKILL.md' >/dev/null
           unzip -p "${release_zip}" timem-skill/install-all.ps1 | cmp -s install-all.ps1 -
           unzip -p "${release_zip}" timem-skill/install-all.sh | cmp -s install-all.sh -
           cp "${release_zip}" dist/release/timem-skill-latest.zip
+          python scripts/build_cos_artifacts.py \
+            --version "${version}" \
+            --release-zip "${release_zip}"
+          full_zip="dist/cos/full/timem-memory-skill-${version}.zip"
+          unzip -t "${full_zip}" >/dev/null
+          unzip -l "${full_zip}" | grep 'timem-memory-skill/SKILL.md' >/dev/null
+          cmp -s install-all.ps1 "dist/cos/installers/${version}/install-all.ps1"
+          cmp -s install-all.sh "dist/cos/installers/${version}/install-all.sh"
+          python scripts/upload_cos.py --plan >/dev/null
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Install COS SDK
         if: >-
@@ -132,7 +146,7 @@ jobs:
 
         # 使用腾讯云 PyPI 镜像（自建 runner 在腾讯云内可走内网，避免官方源慢）
         run: pip install -i https://mirrors.cloud.tencent.com/pypi/simple cos-python-sdk-v5
-      - name: Upload standalone and release packages
+      - name: Upload verified COS release snapshot
         if: >-
           ${{
             (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
