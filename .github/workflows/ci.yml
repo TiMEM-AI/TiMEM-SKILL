@@ -9,6 +9,7 @@ on:
       - 'scripts/**'
       - 'install-all.sh'
       - 'install-all.ps1'
+      - 'install-all.core.ps1'
       - 'README.md'
       - 'README_zh.md'
       - 'LICENSE'
@@ -20,6 +21,7 @@ on:
       - 'scripts/**'
       - 'install-all.sh'
       - 'install-all.ps1'
+      - 'install-all.core.ps1'
       - 'README.md'
       - 'README_zh.md'
       - 'LICENSE'
@@ -96,8 +98,10 @@ jobs:
           test -f "${release_zip}"
           unzip -t "${release_zip}" >/dev/null
           unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.ps1'
+          unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.core.ps1'
           unzip -l "${release_zip}" | grep -q 'timem-skill/install-all.sh'
           unzip -p "${release_zip}" timem-skill/install-all.ps1 | cmp -s install-all.ps1 -
+          unzip -p "${release_zip}" timem-skill/install-all.core.ps1 | cmp -s install-all.core.ps1 -
           unzip -p "${release_zip}" timem-skill/install-all.sh | cmp -s install-all.sh -
           cp "${release_zip}" dist/release/timem-skill-latest.zip
           echo "version=${version}" >> "${GITHUB_OUTPUT}"

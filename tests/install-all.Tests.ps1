@@ -1,11 +1,10 @@
 Describe 'install-all.ps1' {
-  It 'can be evaluated with the advertised downloaded-source bootstrap' {
+  It 'can be evaluated with the legacy downloaded-source bootstrap' {
     $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
-    $downloadedSource = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($scriptPath))
-    $source = $downloadedSource.TrimStart([char]0xFEFF)
+    $source = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($scriptPath))
     $firstLine = ($source -split "`r?`n", 2)[0]
     $probe = $firstLine + "`n#>`n'DOWNLOADED_SOURCE_OK'"
-    $advertisedBootstrap = [regex]::Escape('(irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1).TrimStart([char]0xFEFF) | iex')
+    $advertisedBootstrap = [regex]::Escape('irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1 | iex')
 
     $source[0] | Should Be '<'
     (Invoke-Expression $probe -ErrorAction Stop) | Should Be 'DOWNLOADED_SOURCE_OK'
@@ -14,6 +13,20 @@ Describe 'install-all.ps1' {
 
   It 'has no PowerShell parser errors' {
     $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
+    $tokens = $null
+    $errors = $null
+
+    [System.Management.Automation.Language.Parser]::ParseFile(
+      $scriptPath,
+      [ref]$tokens,
+      [ref]$errors
+    ) | Out-Null
+
+    $errors.Count | Should Be 0
+  }
+
+  It 'has no installer core parser errors' {
+    $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.core.ps1'
     $tokens = $null
     $errors = $null
 
