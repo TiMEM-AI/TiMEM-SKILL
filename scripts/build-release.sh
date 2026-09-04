@@ -110,6 +110,18 @@ REQUIRED_SKILLS=(
 
 info "项目根目录: $PROJECT_ROOT"
 
+# Always regenerate derived full/standalone packages so the release archive is
+# a snapshot of this checkout rather than whatever happened to be in dist/.
+if command -v python3 &>/dev/null; then
+  PYTHON_BIN="python3"
+elif command -v python &>/dev/null; then
+  PYTHON_BIN="python"
+else
+  error "需要 python3 或 python 来生成发行包"
+  exit 1
+fi
+"$PYTHON_BIN" "${PROJECT_ROOT}/scripts/build-all.py"
+
 for f in "${REQUIRED_FILES[@]}"; do
   if [[ ! -f "${PROJECT_ROOT}/${f}" ]]; then
     error "缺少必要文件: $f"
@@ -120,6 +132,20 @@ done
 for s in "${REQUIRED_SKILLS[@]}"; do
   if [[ ! -d "${PROJECT_ROOT}/${s}" ]]; then
     error "缺少必要 skill 目录: $s"
+    exit 1
+  fi
+done
+
+REQUIRED_INSTALL_SOURCES=(
+  "dist/full/timem-memory-skill"
+  "dist/standalone/timem-coding-memory"
+  "dist/standalone/timem-general-memory"
+  "skills/timem-writing-memory"
+)
+
+for s in "${REQUIRED_INSTALL_SOURCES[@]}"; do
+  if [[ ! -f "${PROJECT_ROOT}/${s}/SKILL.md" ]]; then
+    error "缺少安装器所需发行目录: $s"
     exit 1
   fi
 done
@@ -151,6 +177,18 @@ for s in "${REQUIRED_SKILLS[@]}"; do
   ok "添加 skill: $s"
 done
 
+# 复制 shared 目录 (mcp-tools.md 等)
+if [[ -d "${PROJECT_ROOT}/skills/shared" ]]; then
+  cp -r "${PROJECT_ROOT}/skills/shared" "${STAGING}/shared"
+  ok "添加 shared/"
+fi
+
+# 上面的 REQUIRED_SKILLS 循环已按仓库相对路径放进 dist/standalone 与 skills/，
+# 这里只补它没覆盖的 dist/full（一键安装器与 COS 快照都要求该布局）。
+# 不再重复 cp 已放好的目录，否则 cp -r 会嵌套进同名子目录。
+mkdir -p "${STAGING}/dist/full"
+cp -r "${PROJECT_ROOT}/dist/full/timem-memory-skill" "${STAGING}/dist/full/"
+ok "添加 dist/full/timem-memory-skill"
 # 复制安装脚本和文档
 for f in "${REQUIRED_FILES[@]}"; do
   cp "${PROJECT_ROOT}/${f}" "${STAGING}/$(basename "$f")"
@@ -182,29 +220,12 @@ info "打包 ZIP: $ZIP_PATH"
 # 先删除已存在的同名 ZIP (幂等)
 rm -f "$ZIP_PATH"
 
-# 使用 zip 打包；如果没有 zip 命令则用 python3
-if command -v zip &>/dev/null; then
-  (cd "$TMP_DIR" && zip -r "$ZIP_PATH" timem-skill/ -x '*.DS_Store' -x '*Thumbs.db' -x '*__pycache__*' -x '*.pyc')
-else
-  warn "zip 命令不可用，使用 python3 打包"
-  python3 -c "
-import zipfile, os, fnmatch
-exclude = ['.DS_Store', 'Thumbs.db']
-exclude_dirs = ['__pycache__']
-zip_path = '$ZIP_PATH'
-base = '$TMP_DIR/timem-skill'
-with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-    for root, dirs, files in os.walk(base):
-        # 过滤目录
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
-        for f in files:
-            if f in exclude or f.endswith('.pyc'):
-                continue
-            full = os.path.join(root, f)
-            arc = os.path.relpath(full, '$TMP_DIR')
-            zf.write(full, arc)
-"
-fi
+# 固定条目顺序、时间戳和权限；同一源码重复构建必须得到相同 SHA-256，
+# 才能安全复用不可变的 COS 版本对象。
+"$PYTHON_BIN" "${PROJECT_ROOT}/scripts/deterministic_zip.py" \
+  --source "$STAGING" \
+  --destination "$ZIP_PATH" \
+  --archive-root timem-skill
 
 # ── 验证 ─────────────────────────────────────────────
 if [[ ! -f "$ZIP_PATH" ]]; then

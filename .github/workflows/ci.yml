@@ -28,7 +28,9 @@ on:
 
 concurrency:
   group: skill-ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Do not interrupt an in-flight publication after version objects have begun
+  # uploading. Pull requests use distinct refs, so they still do not overlap.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # 原 test-installer（Windows）job 已移除：本仓库的 runner 全部是 Linux，
@@ -46,6 +48,8 @@ jobs:
       # - uses: actions/setup-python@v5
       #   with:
       #     python-version: '3.11'
+      - name: Run COS artifact contract tests
+        run: python -m unittest tests.test_cos_artifacts tests.test_cos_upload_plan
       - name: Run Bash installer tests
         run: bash tests/install-all.sh.Tests.sh
 
@@ -62,7 +66,9 @@ jobs:
       TENCENT_COS_BUCKET: ${{ secrets.TENCENT_COS_BUCKET }}
       TENCENT_COS_REGION: ${{ secrets.TENCENT_COS_REGION }}
       COS_PREFIX: timem/skills/standalone
+      COS_FULL_PREFIX: timem/skills/full/timem-memory-skill
       RELEASE_COS_PREFIX: releases
+      INSTALLER_COS_PREFIX: installers
       # 飞书机器人 webhook 存于仓库 Secret（仓库设置 → Secrets），不要硬编码到工作流里。
       # webhook URL 等同于凭证，泄露后任何人都能往群里发消息；若曾明文提交过，需在飞书群设置里重新生成。
       FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
@@ -90,7 +96,7 @@ jobs:
         id: release
         run: |
           set -euo pipefail
-          version=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+          version=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short=12 HEAD)
           version="${version#v}"
           bash scripts/build-release.sh --version "${version}"
           release_zip="dist/release/timem-skill-${version}.zip"
@@ -100,9 +106,22 @@ jobs:
           # 在 set -o pipefail 下使步骤以退出码 141 失败。
           unzip -l "${release_zip}" | grep 'timem-skill/install-all.ps1' >/dev/null
           unzip -l "${release_zip}" | grep 'timem-skill/install-all.sh' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/dist/full/timem-memory-skill/SKILL.md' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/dist/standalone/timem-coding-memory/SKILL.md' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/dist/standalone/timem-general-memory/SKILL.md' >/dev/null
+          unzip -l "${release_zip}" | grep 'timem-skill/skills/timem-writing-memory/SKILL.md' >/dev/null
           unzip -p "${release_zip}" timem-skill/install-all.ps1 | cmp -s install-all.ps1 -
           unzip -p "${release_zip}" timem-skill/install-all.sh | cmp -s install-all.sh -
           cp "${release_zip}" dist/release/timem-skill-latest.zip
+          python scripts/build_cos_artifacts.py \
+            --version "${version}" \
+            --release-zip "${release_zip}"
+          full_zip="dist/cos/full/timem-memory-skill-${version}.zip"
+          unzip -t "${full_zip}" >/dev/null
+          unzip -l "${full_zip}" | grep 'timem-memory-skill/SKILL.md' >/dev/null
+          cmp -s install-all.ps1 "dist/cos/installers/${version}/install-all.ps1"
+          cmp -s install-all.sh "dist/cos/installers/${version}/install-all.sh"
+          python scripts/upload_cos.py --plan >/dev/null
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Install COS SDK
         if: >-
@@ -113,7 +132,7 @@ jobs:
 
         # 使用腾讯云 PyPI 镜像（自建 runner 在腾讯云内可走内网，避免官方源慢）
         run: pip install -i https://mirrors.cloud.tencent.com/pypi/simple cos-python-sdk-v5
-      - name: Upload standalone and release packages
+      - name: Upload verified COS release snapshot
         if: >-
           ${{
             (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
