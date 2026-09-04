@@ -5,7 +5,7 @@
 # 功能:
 #   - 从 git tag 或 commit hash 读取版本号
 #   - 将安装器需要的 5 个 skill + 安装脚本 + README 打包为 ZIP
-#     (清单与 install-all.sh / install-all.core.ps1 的 ALL_SKILLS 保持一致)
+#     (清单与 install-all.sh / install-all.ps1 的 ALL_SKILLS 保持一致)
 #   - 输出到 dist/release/timem-skill-{version}.zip，并同步一份 timem-skill-latest.zip
 #   - 幂等: 重复运行会覆盖同名 ZIP
 #
@@ -96,11 +96,10 @@ fi
 REQUIRED_FILES=(
   "install-all.sh"
   "install-all.ps1"
-  "install-all.core.ps1"
   "README.md"
 )
 
-# 与 install-all.sh / install-all.core.ps1 的 ALL_SKILLS 保持一致
+# 与 install-all.sh / install-all.ps1 的 ALL_SKILLS 保持一致
 REQUIRED_SKILLS=(
   "dist/standalone/timem-coding-memory"
   "dist/standalone/timem-general-memory"
@@ -145,7 +144,7 @@ mkdir -p "$STAGING"
 info "准备打包内容到临时目录..."
 
 # 复制 5 个 skill 目录 (与安装器 ALL_SKILLS 一致，保留仓库相对路径布局，
-# 这样 install-all.sh / install-all.core.ps1 可以直接使用包内源文件)
+# 这样 install-all.sh / install-all.ps1 可以直接使用包内源文件)
 for s in "${REQUIRED_SKILLS[@]}"; do
   mkdir -p "${STAGING}/$(dirname "$s")"
   cp -r "${PROJECT_ROOT}/${s}" "${STAGING}/${s}"
