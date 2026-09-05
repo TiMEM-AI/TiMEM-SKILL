@@ -55,7 +55,7 @@ if (`$errors.Count -gt 0) {
     $previousSource = $env:TIMEM_SKILL_SOURCE_DIR
     try {
       $env:TIMEM_SKILL_SOURCE_DIR = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-      $output = & $windowsPowerShell.Source -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $scriptPath -ApiKey 'test-parser-only' -Agent '__parser_probe__' 2>&1 | Out-String
+      $output = "3`n" | & $windowsPowerShell.Source -NoProfile -ExecutionPolicy Bypass -File $scriptPath -ApiKey 'test-parser-only' -Agent '__parser_probe__' 2>&1 | Out-String
       $LASTEXITCODE | Should Be 0
     } finally {
       $env:TIMEM_SKILL_SOURCE_DIR = $previousSource
