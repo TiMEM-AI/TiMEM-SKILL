@@ -52,7 +52,14 @@ if (`$errors.Count -gt 0) {
     if (-not $windowsPowerShell) { return }
 
     $scriptPath = Join-Path (Join-Path $PSScriptRoot '..') 'install-all.ps1'
-    $output = & $windowsPowerShell.Source -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $scriptPath 2>&1 | Out-String
+    $previousSource = $env:TIMEM_SKILL_SOURCE_DIR
+    try {
+      $env:TIMEM_SKILL_SOURCE_DIR = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+      $output = & $windowsPowerShell.Source -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $scriptPath -ApiKey 'test-parser-only' -Agent '__parser_probe__' 2>&1 | Out-String
+      $LASTEXITCODE | Should Be 0
+    } finally {
+      $env:TIMEM_SKILL_SOURCE_DIR = $previousSource
+    }
 
     ($output -match 'ParserError|Try statement is missing|Missing closing|Unexpected token') | Should Be $false
   }
