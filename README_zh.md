@@ -11,12 +11,12 @@
 
 | | |
 |---|---|
-| **下载** | [timem-skill-latest.zip](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip) |
-| **历史版本** | [releases/](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/) |
+| **下载** | [timem-skill-latest.zip](https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/timem-skill-latest.zip) |
+| **历史版本** | [releases/](https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/) |
 
 ```bash
 # 1. 下载
-curl -fsSL 'https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
+curl -fsSL 'https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
 
 # 2. 解压
 unzip timem-skill.zip
@@ -25,7 +25,7 @@ unzip timem-skill.zip
 cd timem-skill && bash install-all.sh --api-key 你的_TIMEM_API_KEY
 ```
 
-> **Windows (PowerShell)：** 在线一键安装运行 `$env:TIMEM_API_KEY='你的_TIMEM_API_KEY'; $env:TIMEM_AGENT='codex'; (irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1).TrimStart([char]0xFEFF) | iex`。使用 ZIP 包时运行 `.\install-all.ps1 -ApiKey 你的_TIMEM_API_KEY -Agent codex`；`-Agent` 支持逗号分隔多个 agent，也可用环境变量 `TIMEM_AGENT`。
+> **Windows (PowerShell)：** 在线一键安装运行 `$env:TIMEM_API_KEY='你的_TIMEM_API_KEY'; $env:TIMEM_AGENT='codex'; (irm https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/installers/install-all.ps1).TrimStart([char]0xFEFF) | iex`。使用 ZIP 包时运行 `.\install-all.ps1 -ApiKey 你的_TIMEM_API_KEY -Agent codex`；`-Agent` 支持逗号分隔多个 agent，也可用环境变量 `TIMEM_AGENT`。
 
 安装器只会在已核验的用户级或 Agent workspace 指令目标中维护 TiMEM 工作流：
 

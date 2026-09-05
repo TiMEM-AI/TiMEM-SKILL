@@ -27,7 +27,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: skill-ci-${{ github.ref }}
+  group: skill-ci-${{ github.event_name == 'pull_request' && github.ref || 'publication' }}
   # Do not interrupt an in-flight publication after version objects have begun
   # uploading. Pull requests use distinct refs, so they still do not overlap.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -41,13 +41,15 @@ jobs:
     runs-on: ${{ vars.RUNNER_LABEL_WINDOWS || 'windows-latest' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Run Windows COS download tests
+        run: python -m unittest tests.test_cos_installer
       - name: Install Pester 3
         shell: powershell
         run: |
           Install-Module Pester -RequiredVersion 3.4.0 -Scope CurrentUser -Force -SkipPublisherCheck
           Import-Module Pester -RequiredVersion 3.4.0 -Force
       - name: Run PowerShell installer tests
-        shell: pwsh
+        shell: powershell
         run: |
           Import-Module Pester -RequiredVersion 3.4.0 -Force
           Invoke-Pester -Script .\tests -EnableExit
@@ -63,7 +65,7 @@ jobs:
       #   with:
       #     python-version: '3.11'
       - name: Run COS artifact contract tests
-        run: python -m unittest tests.test_cos_artifacts tests.test_cos_upload_plan
+        run: python -m unittest tests.test_cos_artifacts tests.test_cos_upload_plan tests.test_cos_installer
       - name: Run Bash installer tests
         run: bash tests/install-all.sh.Tests.sh
 
@@ -160,6 +162,7 @@ jobs:
           : "${TENCENT_COS_BUCKET:?TENCENT_COS_BUCKET secret is required}"
           : "${TENCENT_COS_REGION:?TENCENT_COS_REGION secret is required}"
           python3 scripts/upload_cos.py
+          python3 scripts/verify_cos_public.py --version '${{ steps.release.outputs.version }}'
       - name: Notify Feishu
         if: >-
           ${{

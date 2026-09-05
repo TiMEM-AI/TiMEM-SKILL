@@ -12,12 +12,12 @@ Download the latest release ZIP — no git clone needed:
 
 | | |
 |---|---|
-| **Download** | [timem-skill-latest.zip](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip) |
-| **Version** | [releases/](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/) |
+| **Download** | [timem-skill-latest.zip](https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/timem-skill-latest.zip) |
+| **Version** | [releases/](https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/) |
 
 ```bash
 # 1. Download
-curl -fsSL 'https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
+curl -fsSL 'https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
 
 # 2. Unzip
 unzip timem-skill.zip
@@ -26,7 +26,7 @@ unzip timem-skill.zip
 cd timem-skill && bash install-all.sh --api-key YOUR_TIMEM_API_KEY
 ```
 
-> **Windows (PowerShell):** For a one-line install, run `$env:TIMEM_API_KEY='YOUR_TIMEM_API_KEY'; $env:TIMEM_AGENT='codex'; (irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1).TrimStart([char]0xFEFF) | iex`. For the ZIP package, run `.\install-all.ps1 -ApiKey YOUR_TIMEM_API_KEY -Agent codex`; `-Agent` accepts comma-separated agents, and `TIMEM_AGENT` remains supported.
+> **Windows (PowerShell):** For a one-line install, run `$env:TIMEM_API_KEY='YOUR_TIMEM_API_KEY'; $env:TIMEM_AGENT='codex'; (irm https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/installers/install-all.ps1).TrimStart([char]0xFEFF) | iex`. For the ZIP package, run `.\install-all.ps1 -ApiKey YOUR_TIMEM_API_KEY -Agent codex`; `-Agent` accepts comma-separated agents, and `TIMEM_AGENT` remains supported.
 
 The installers maintain TiMEM instructions only at verified user-global or agent-workspace targets:
 

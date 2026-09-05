@@ -10,7 +10,7 @@
 #   - 部分 agent 失败不影响其他，最后汇总
 #
 # 用法:
-#   curl -fsSL https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.sh | bash
+#   curl -fsSL https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/installers/install-all.sh | bash
 #   bash install-all.sh [OPTIONS]
 #
 # 参数:
@@ -34,7 +34,7 @@ set -uo pipefail
 # 常量
 # ============================================================================
 
-TIMEM_SKILL_REPO="https://github.com/TiMEM-AI/TiMEM-SKILL"
+TIMEM_COS_BASE_URL="https://careerfun-1257357192.cos.ap-beijing.myqcloud.com"
 TIMEM_MCP_REPO="https://github.com/TiMEM-AI/timem-mcp"
 TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp/"
 TIMEM_SERVER_NAME="TiMEM-SPACE"
@@ -188,7 +188,7 @@ if [ "$IS_TTY" = false ] && [ "$QUIET" = false ] && [ "$DRY_RUN" = false ]; then
     echo "本脚本支持交互式引导安装，但在管道中无法交互。"
     echo "建议先下载到本地再执行:"
     echo ""
-    echo "  curl -fsSL https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.sh -o install-all.sh"
+    echo "  curl -fsSL https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/installers/install-all.sh -o install-all.sh"
     echo "  bash install-all.sh"
     echo ""
     echo "或使用非交互参数直接安装:"
@@ -293,28 +293,59 @@ agent_in_filter() {
 
 download_skills() {
   local dest="$TMPDIR_WORK/timem-skill"
-  local tarball="$TMPDIR_WORK/timem-skill.tar.gz"
 
   if [ "$DRY_RUN" = true ]; then
-    dryrun "会从 $TIMEM_SKILL_REPO 下载 tarball"
+    dryrun "会从 $TIMEM_COS_BASE_URL 下载并校验发行包"
     return 0
   fi
 
-  info "下载 TiMEM-SKILL 仓库..."
-  if curl -fsSL "$TIMEM_SKILL_REPO/archive/refs/heads/main.tar.gz" -o "$tarball" 2>/dev/null; then
-    mkdir -p "$dest"
-    tar xzf "$tarball" -C "$dest" --strip-components=1 2>/dev/null
-    if [ -d "$dest/dist/standalone" ] || [ -d "$dest/skills" ]; then
-      success "TiMEM-SKILL 已下载"
-      return 0
-    else
-      error "tarball 解压后未找到预期目录结构"
-      return 1
-    fi
-  else
-    error "下载 TiMEM-SKILL 失败 (网络问题？)"
+  info "从 COS 下载 TiMEM-SKILL 发行包..."
+  if ! python3 - "$TIMEM_COS_BASE_URL" "$TMPDIR_WORK" <<'PYEOF'
+import hashlib
+import json
+import pathlib
+import re
+import subprocess
+import sys
+import zipfile
+
+base, work = sys.argv[1].rstrip('/'), pathlib.Path(sys.argv[2])
+def download(key, name):
+    target = work / name
+    subprocess.run(['curl', '-fsSL', '--retry', '2', '--max-time', '120',
+                    base + '/' + key, '-o', str(target)], check=True)
+    return target
+
+latest = json.loads(download('releases/latest.json', 'latest.json').read_text())
+version = latest['version']
+if not isinstance(version, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]*', version):
+    raise ValueError('Invalid release version')
+release_key = f'releases/timem-skill-{version}.zip'
+manifest_key = f'releases/release-manifest-{version}.json'
+if latest['artifacts']['release'] != release_key or latest['artifacts']['manifest'] != manifest_key:
+    raise ValueError('Invalid release snapshot paths')
+manifest = json.loads(download(manifest_key, 'manifest.json').read_text())
+if manifest['version'] != version:
+    raise ValueError('Release manifest version mismatch')
+archive = download(release_key, 'release.zip')
+record = manifest['artifacts']['release']
+if archive.stat().st_size != record['size'] or hashlib.sha256(archive.read_bytes()).hexdigest() != record['sha256']:
+    raise ValueError('Release ZIP checksum mismatch')
+with zipfile.ZipFile(archive) as package:
+    for entry in package.namelist():
+        parts = pathlib.PurePosixPath(entry).parts
+        if not parts or parts[0] != 'timem-skill' or '..' in parts or '\\' in entry:
+            raise ValueError('Unsafe release ZIP path')
+    package.extractall(work)
+for source in ('dist/standalone/timem-coding-memory', 'dist/standalone/timem-general-memory', 'skills/timem-writing-memory'):
+    if not (work / 'timem-skill' / source / 'SKILL.md').is_file():
+        raise ValueError('Release missing skill: ' + source)
+PYEOF
+  then
+    error "TiMEM-SKILL 下载或校验失败"
     return 1
   fi
+  success "TiMEM-SKILL 已下载并校验"
 }
 
 # ============================================================================
@@ -1263,8 +1294,8 @@ fi
 # 下载 skills (除非 --skip-skills)
 if [ "$SKIP_SKILLS" = false ]; then
   download_skills || {
-    warn "TiMEM-SKILL 下载失败，skills 安装将跳过"
-    SKIP_SKILLS=true
+    error "TiMEM-SKILL 下载或校验失败，安装已停止"
+    exit 1
   }
 fi
 
