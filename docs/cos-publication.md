@@ -29,6 +29,9 @@ the versioned ZIPs and both versioned/stable installers using anonymous GETs.
 For Windows offline/configuration regression testing, `TIMEM_SKILL_SOURCE_DIR`
 can point to an extracted release root containing the required Skill directories.
 
-Rollback: publish the previously verified release manifest as `latest.json` and
-restore installer aliases from the same version. Do not overwrite version objects.
+Rollback: restore installer aliases from a previously verified version, then
+restore its saved `latest.json` pointer as the final step. If no pointer was saved,
+reconstruct it with that version and its immutable artifact keys using the same
+schema as the builder. Never copy a `release-manifest-*.json` directly over
+`latest.json`: the two schemas differ. Do not overwrite version objects.
 The uploader refuses a conflicting hash at an existing version path.
