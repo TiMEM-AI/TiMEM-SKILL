@@ -364,6 +364,8 @@ def main() -> None:
     secret_id = require_env("TENCENT_SECRET_ID")
     secret_key = require_env("TENCENT_SECRET_KEY")
     bucket = require_env("TENCENT_COS_BUCKET")
+    if bucket != "careerfun-1257357192" or region != "ap-beijing":
+        raise RuntimeError("COS target differs from the verified public installer domain")
     config = CosConfig(
         Region=region,
         SecretId=secret_id,

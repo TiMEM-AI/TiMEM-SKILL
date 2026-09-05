@@ -15,6 +15,7 @@ function Invoke-InstallAllInSandbox {
     APPDATA = Join-Path $TestRoot 'appdata'
     TEMP = Join-Path $TestRoot 'temp'
     TIMEM_API_KEY = 'test-key-12345678'
+    TIMEM_SKILL_SOURCE_DIR = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     TIMEM_AGENT = if ($UseCli) { $null } else { $AgentName }
     CODEX_HOME = $null
     QODER_CONFIG_DIR = $null

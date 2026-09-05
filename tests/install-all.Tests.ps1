@@ -5,7 +5,7 @@ Describe 'install-all.ps1' {
     $source = $downloadedSource.TrimStart([char]0xFEFF)
     $firstLine = ($source -split "`r?`n", 2)[0]
     $probe = $firstLine + "`n#>`n'DOWNLOADED_SOURCE_OK'"
-    $advertisedBootstrap = [regex]::Escape('(irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1).TrimStart([char]0xFEFF) | iex')
+    $advertisedBootstrap = [regex]::Escape('(irm https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/installers/install-all.ps1).TrimStart([char]0xFEFF) | iex')
 
     $source[0] | Should Be '<'
     (Invoke-Expression $probe -ErrorAction Stop) | Should Be 'DOWNLOADED_SOURCE_OK'

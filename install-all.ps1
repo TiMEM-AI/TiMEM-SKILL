@@ -4,7 +4,7 @@
 .DESCRIPTION
   为所有已检测的 Agent 工具安装 TiMEM Skills + MCP 配置 + 全局指令
 .USAGE
-  $env:TIMEM_API_KEY = "tmk_xxx"; (irm https://raw.githubusercontent.com/TiMEM-AI/TiMEM-SKILL/main/install-all.ps1).TrimStart([char]0xFEFF) | iex
+  $env:TIMEM_API_KEY = "tmk_xxx"; (irm https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/installers/install-all.ps1).TrimStart([char]0xFEFF) | iex
   .\install-all.ps1 -ApiKey "tmk_xxx" -Agent "codex"
   .\install-all.ps1 -ApiKey "tmk_xxx" -Agent "codex" -SkipAgentInstructions
 #>
@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 # ============================================================================
 # 常量
 # ============================================================================
-$TIMEM_SKILL_REPO = "https://github.com/TiMEM-AI/TiMEM-SKILL"
+$TIMEM_COS_BASE_URL = "https://careerfun-1257357192.cos.ap-beijing.myqcloud.com"
 $TIMEM_MCP_REPO = "https://github.com/TiMEM-AI/timem-mcp"
 $TIMEM_CLOUD_URL = "https://api.space.timem.cloud/mcp/"
 $TIMEM_API_HOST_DEFAULT = "https://api.space.timem.cloud"
@@ -192,22 +192,50 @@ function Detect-Agent($agent) {
 # 下载 TiMEM-SKILL
 # ============================================================================
 function Download-Skills {
-  $tmpDir = Join-Path $env:TEMP "timem-skill-$(Get-Random)"
-  $tarball = Join-Path $env:TEMP "timem-skill.tar.gz"
-
-  Info "下载 TiMEM-SKILL 仓库..."
-  try {
-    Invoke-WebRequest -Uri "$TIMEM_SKILL_REPO/archive/refs/heads/main.tar.gz" -OutFile $tarball -UseBasicParsing
-    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
-    # 用 tar 解压 (Windows 10+ 自带)
-    tar xzf $tarball -C $tmpDir --strip-components=1 2>$null
-    if ((Test-Path "$tmpDir\dist\standalone") -or (Test-Path "$tmpDir\skills")) {
-      Success "TiMEM-SKILL 已下载"
-      return $tmpDir
-    } else {
-      Err "解压后未找到预期目录结构"
-      return $null
+  if ($env:TIMEM_SKILL_SOURCE_DIR) {
+    foreach ($skill in $ALL_SKILLS) {
+      if (-not (Test-Path -LiteralPath (Join-Path $env:TIMEM_SKILL_SOURCE_DIR "$($skill.path)/SKILL.md"))) {
+        Err "Local release missing skill: $($skill.name)"
+        return $null
+      }
     }
+    return $env:TIMEM_SKILL_SOURCE_DIR
+  }
+  $tmpDir = Join-Path $env:TEMP "timem-skill-$(Get-Random)"
+  Info "从 COS 下载 TiMEM-SKILL 发行包..."
+  try {
+    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+    $latest = Invoke-RestMethod -Uri "$TIMEM_COS_BASE_URL/releases/latest.json" -ErrorAction Stop
+    $version = [string]$latest.version
+    if ($version -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') { throw "Invalid release version" }
+    $releaseKey = "releases/timem-skill-$version.zip"
+    $manifestKey = "releases/release-manifest-$version.json"
+    if ($latest.artifacts.release -ne $releaseKey -or $latest.artifacts.manifest -ne $manifestKey) {
+      throw "Invalid release snapshot paths"
+    }
+    $manifest = Invoke-RestMethod -Uri "$TIMEM_COS_BASE_URL/$manifestKey" -ErrorAction Stop
+    if ($manifest.version -ne $version) { throw "Release manifest version mismatch" }
+    $archive = Join-Path $tmpDir 'release.zip'
+    Invoke-WebRequest -Uri "$TIMEM_COS_BASE_URL/$releaseKey" -OutFile $archive -UseBasicParsing -ErrorAction Stop
+    $record = $manifest.artifacts.release
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+      $digest = [BitConverter]::ToString($sha256.ComputeHash([IO.File]::ReadAllBytes($archive))).Replace('-', '')
+    } finally { $sha256.Dispose() }
+    if ((Get-Item -LiteralPath $archive).Length -ne $record.size -or
+        $digest -ne $record.sha256) {
+      throw "Release ZIP checksum mismatch"
+    }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [IO.Compression.ZipFile]::ExtractToDirectory($archive, $tmpDir)
+    $package = Join-Path $tmpDir 'timem-skill'
+    foreach ($skill in $ALL_SKILLS) {
+      if (-not (Test-Path -LiteralPath (Join-Path $package "$($skill.path)/SKILL.md"))) {
+        throw "Release missing skill: $($skill.name)"
+      }
+    }
+    Success "TiMEM-SKILL $version 已下载并校验"
+    return $package
   } catch {
     Err "下载 TiMEM-SKILL 失败: $_"
     return $null
@@ -800,7 +828,7 @@ if ($SILENT_MODE) {
 # 下载 skills
 $skillDir = Download-Skills
 if (-not $skillDir) {
-  Warn "TiMEM-SKILL 下载失败，skills 安装将跳过"
+  throw "TiMEM-SKILL 下载或校验失败，安装已停止"
 }
 
 # 遍历所有 agent
