@@ -6,7 +6,7 @@ description: >-
   generating reply, then create_memory AFTER generating reply. No exceptions,
   no skip. If user message contains "记", MUST call create_memory. Ambiguous:
   classify_memory_scene.
-version: "1.0.3"
+version: "1.0.4"
 display_name: 太忆空间 记忆连接技
 display_name_en: TiMEM Memory Skill
 description_zh: '请访问：https://space.timem.cloud/ 你的所有 AI 助手， 终于共用同一个大脑 说一次"记住"，换多少个 Agent 都记得你。 太忆空间让你的记忆随你走。'
@@ -71,6 +71,8 @@ Never paste full files or long logs into `messages`. Never use random UUIDs per 
 
 **Memory vs rule:** facts / preferences / orientation → `create_memory`; reusable "in situation X, do Y" → `learn_rule` (rule-learning skill).
 
+**Memory vs knowledge base:** memory stores cognition *about the user* distilled from conversations (preferences, decisions, lessons); the knowledge base stores *reference material the user provides* (papers, docs, specs, plans) via `write_knowledge` / `search_knowledge` (timem-knowledge skill). Rule of thumb: does the info stand on its own outside this conversation as external material? → knowledge base. Did it grow out of interactions as cognition about the user? → memory. When unsure which holds the answer, query both.
+
 ## Skip
 
 No skip. Every turn: search before reply, create after reply.
@@ -93,6 +95,7 @@ For business repos: [assets/agents-snippet.md](assets/agents-snippet.md)
 
 ## Changelog
 
+- 1.0.4 (2026-09-08): Add memory-vs-knowledge-base boundary note and pointer to timem-knowledge skill.
 - 1.0.3 (2026-09-04): Remove three-domain teaching and all `session_id` notes; domain is an optional tag only. Name → 跨Agent记忆-太忆 TiMEM.
 - 1.0.2 (2026-09-01): Adjust metadata frontmatter layout.
 - 0.3.1 (2026-08-26): Remove all `session_id` requirements — server schema has no such field.
