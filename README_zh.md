@@ -11,12 +11,12 @@
 
 | | |
 |---|---|
-| **下载** | [timem-skill-latest.zip](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip) |
-| **历史版本** | [releases/](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/) |
+| **下载** | [timem-skill-latest.zip](https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/timem-skill-latest.zip) |
+| **历史版本** | [releases/](https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/) |
 
 ```bash
 # 1. 下载
-curl -fsSL 'https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
+curl -fsSL 'https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
 
 # 2. 解压
 unzip timem-skill.zip

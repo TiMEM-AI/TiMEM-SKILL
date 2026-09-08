@@ -12,12 +12,12 @@ Download the latest release ZIP — no git clone needed:
 
 | | |
 |---|---|
-| **Download** | [timem-skill-latest.zip](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip) |
-| **Version** | [releases/](https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/) |
+| **Download** | [timem-skill-latest.zip](https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/timem-skill-latest.zip) |
+| **Version** | [releases/](https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/) |
 
 ```bash
 # 1. Download
-curl -fsSL 'https://timem-skill-1300898765.cos.ap-guangzhou.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
+curl -fsSL 'https://careerfun-1257357192.cos.ap-beijing.myqcloud.com/releases/timem-skill-latest.zip' -o timem-skill.zip
 
 # 2. Unzip
 unzip timem-skill.zip
