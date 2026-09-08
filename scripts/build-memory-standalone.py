@@ -243,7 +243,12 @@ def _validate_standalone(text: str) -> list[str]:
 
 
 def _assert_standalone_quality(text: str) -> None:
-    if not text.startswith("---\n") or "name: timem-memory-skill" not in text:
+    if not text.startswith("---\n"):
+        raise SystemExit("Standalone SKILL.md failed frontmatter/name check")
+    fm_end = text.find("\n---\n", 4)
+    frontmatter = text[4:fm_end] if fm_end > 0 else ""
+    # Name is product branding and may change; only require that one is present.
+    if not re.search(r"^name:\s*\S+", frontmatter, flags=re.MULTILINE):
         raise SystemExit("Standalone SKILL.md failed frontmatter/name check")
     if "../../shared" in text:
         raise SystemExit("Standalone still references ../../shared")

@@ -1,6 +1,6 @@
 # Memory workflow
 
-## General domain
+## General
 
 ### What belongs
 
@@ -16,7 +16,7 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 **Default: search on every turn.** Call `search_memories` BEFORE answering — even if the user did not say remember/记得. Retrieval is cheap; missed context is expensive.
 
-1. `search_memories(query_text=<3–12 words>, domain="general", limit=5)`
+1. `search_memories(query_text=<3–12 words>, limit=5)`
 2. Verify hits against the current conversation; abstain if stale or contradictory.
 
 **Do not under-call** — "I can answer directly" or "this is work not about the person" is not a skip reason.
@@ -25,13 +25,13 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 
 **Default: create after answering.** The server extracts facts and dedups against history, so passing the raw turns is enough.
 
-- `create_memory(domain="general", messages=[2–4 recent turns])`
+- `create_memory(messages=[2–4 recent turns])`
 
 **No skip.** Create every turn — the server extracts facts and dedups against history, so even seemingly trivial turns may hold durable context. Passing the raw turns is enough.
 
-**Scope:** the server resolves scope from your API key; **do not pass `session_id`** — the schema has no such field.
+**Scope:** the server resolves scope from your API key.
 
-## Writing domain
+## Writing
 
 ### Search workflow
 
@@ -43,7 +43,6 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
    ```
    search_memories(
      query_text="<style or audience keywords>",
-     domain="writing",
      limit=5,
    )
    ```
@@ -58,18 +57,15 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 1. **Call**:
    ```
    create_memory(
-     domain="writing",
      messages=[2–4 recent turns],
    )
    ```
-
-**Do not pass `session_id`** — the schema has no such field; scope comes from the API key.
 
 ### Task end
 
 Create every turn; the server dedups, so prefer passing raw turns over manually gating.
 
-## Coding domain
+## Coding
 
 Coding uses `search_tier` and `memory_hint` parameters unique to that domain. See the dedicated references:
 
@@ -78,8 +74,6 @@ Coding uses `search_tier` and `memory_hint` parameters unique to that domain. Se
 
 ### Per-turn workflow (coding)
 
-1. **Search**: `search_memories(domain="coding", query_text=<3–12 words>, search_tier="S3", limit=5)` BEFORE exploratory codebase grep/read
+1. **Search**: `search_memories(query_text=<3–12 words>, search_tier="S3", limit=5)` BEFORE exploratory codebase grep/read
 2. **Reply**: Generate reply using recalled context + fresh code/work context
-3. **Create**: `create_memory(domain="coding", memory_hint="<optional>", messages=[2–4 recent turns])` AFTER reply
-
-**Do not pass `session_id`** — repo scope is not a client parameter; the server schema has no such field.
+3. **Create**: `create_memory(memory_hint="<optional>", messages=[2–4 recent turns])` AFTER reply
