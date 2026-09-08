@@ -101,12 +101,13 @@ resolve_trae_mcp_config() {
 TRAE_MCP_CONFIG_PATH="$(resolve_trae_mcp_config)"
 TRAE_CONFIG_PATH="$(dirname "$TRAE_MCP_CONFIG_PATH")"
 
-# 4 个 TiMEM skills (TiMEM-SPACE MCP：记忆 + 知识库工具): name:repo_relative_path
+# 5 个 TiMEM skills (TiMEM-SPACE MCP：记忆 + 知识库 + 规则工具): name:repo_relative_path
 ALL_SKILLS=(
   "timem-coding-memory:dist/standalone/timem-coding-memory"
   "timem-general-memory:dist/standalone/timem-general-memory"
   "timem-writing-memory:skills/timem-writing-memory"
   "timem-knowledge:skills/timem-knowledge"
+  "timem-rule-learning:skills/timem-rule-learning"
 )
 
 # Agent 矩阵: name|detect_cmd|config_dir|skills_dir|mcp_config|format|root_key|has_skills|instruction_file|instruction_scope|instruction_create_if_missing|additional_detect_dir
@@ -258,6 +259,23 @@ record_result() {
 TMPDIR_WORK="$(mktemp -d /tmp/timem-install-all.XXXXXX)"
 trap 'rm -rf "$TMPDIR_WORK"' EXIT
 
+# Skill 源根目录。release ZIP 自带全部 skill (仓库相对路径布局: dist/ + skills/)，
+# 从 ZIP 运行时直接使用包内源文件；管道在线安装时回退为下载 GitHub tarball。
+SKILLS_ROOT="$TMPDIR_WORK/timem-skill"
+LOCAL_SKILLS_ROOT=""
+_detect_local_skills_root() {
+  local src="${BASH_SOURCE[0]:-}"
+  [ -n "$src" ] || return 1
+  case "$src" in
+    bash|sh|/dev/fd/*|/proc/*/fd/*) return 1 ;;  # 管道在线安装，无本地文件
+  esac
+  local d
+  d="$(cd "$(dirname "$src")" 2>/dev/null && pwd)" || return 1
+  [ -f "$d/skills/timem-knowledge/SKILL.md" ] || return 1
+  printf '%s\n' "$d"
+}
+LOCAL_SKILLS_ROOT="$(_detect_local_skills_root || true)"
+
 # ============================================================================
 # Agent 检测
 # ============================================================================
@@ -324,7 +342,7 @@ download_skills() {
 
 install_one_skill() {
   local skill_name="$1" src_rel="$2" dest_dir="$3"
-  local src="$TMPDIR_WORK/timem-skill/$src_rel"
+  local src="$SKILLS_ROOT/$src_rel"
   local dst="$dest_dir/$skill_name"
 
   if [ ! -d "$src" ] || [ ! -f "$src/SKILL.md" ]; then
@@ -1095,6 +1113,7 @@ interactive_select_skills() {
       timem-general-memory) desc="$(t "通用记忆" "General memory")" ;;
       timem-writing-memory) desc="$(t "写作记忆" "Writing memory")" ;;
       timem-knowledge)      desc="$(t "知识库" "Knowledge base")" ;;
+      timem-rule-learning)  desc="$(t "规则学习" "Rule learning")" ;;
     esac
     printf "  [%d] %s (%s)\n" "$idx" "$skill_name" "$desc"
     idx=$((idx + 1))
@@ -1262,12 +1281,17 @@ if ! command -v curl &>/dev/null; then
   exit 1
 fi
 
-# 下载 skills (除非 --skip-skills)
+# 下载 skills (除非 --skip-skills 或 release 包自带)
 if [ "$SKIP_SKILLS" = false ]; then
-  download_skills || {
-    warn "TiMEM-SKILL 下载失败，skills 安装将跳过"
-    SKIP_SKILLS=true
-  }
+  if [ -n "$LOCAL_SKILLS_ROOT" ]; then
+    SKILLS_ROOT="$LOCAL_SKILLS_ROOT"
+    info "使用安装包自带 skills: $SKILLS_ROOT"
+  else
+    download_skills || {
+      warn "TiMEM-SKILL 下载失败，skills 安装将跳过"
+      SKIP_SKILLS=true
+    }
+  fi
 fi
 
 # 遍历所有 agent

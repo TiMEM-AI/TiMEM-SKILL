@@ -4,6 +4,8 @@
 #
 # 功能:
 #   - 上传 dist/release/timem-skill-{version}.zip 到 COS bucket
+#     (同时更新 releases/timem-skill-latest.zip)
+#   - 上传 install-all.sh|ps1|core.ps1 到 installers/ (前端一键命令引用)
 #   - 支持两种方式: coscli (CLI) 或 Python SDK (cos-python-sdk-v5)
 #   - 上传后输出公开下载 URL
 #   - 缺少配置时给出明确提示
@@ -24,6 +26,7 @@
 #   COS_BUCKET       COS Bucket 名    (必需, 如 timem-skill-1234567890)
 #   COS_REGION       COS 区域          (默认 ap-guangzhou)
 #   COS_KEY_PREFIX   COS key 前缀     (默认 releases/)
+#   INSTALLERS_COS_PREFIX  安装器 key 前缀 (默认 installers)
 #
 
 set -euo pipefail
@@ -163,6 +166,11 @@ fi
 # 去掉 key_prefix 末尾的 /
 KEY_PREFIX="${KEY_PREFIX%/}"
 COS_KEY="${KEY_PREFIX}/timem-skill-${CUSTOM_VERSION}.zip"
+LATEST_COS_KEY="${KEY_PREFIX}/timem-skill-latest.zip"
+
+# 前端一键命令引用的安装器对象 (installers/install-all.sh|ps1|core.ps1)
+INSTALLER_PREFIX="${INSTALLERS_COS_PREFIX:-installers}"
+INSTALLER_FILES=("install-all.sh" "install-all.ps1" "install-all.core.ps1")
 
 info "上传目标: cos://${COS_BUCKET}/${COS_KEY}"
 
@@ -181,6 +189,12 @@ if command -v coscli &>/dev/null; then
   if coscli cp "$ZIP_FILE" "cos://${COS_BUCKET}/${COS_KEY}" -e "cos.${REGION}.myqcloud.com" 2>&1; then
     UPLOAD_SUCCESS=true
     ok "coscli 上传成功"
+    coscli cp "$ZIP_FILE" "cos://${COS_BUCKET}/${LATEST_COS_KEY}" -e "cos.${REGION}.myqcloud.com" 2>&1 \
+      && ok "coscli 上传 latest 包" || warn "latest 包上传失败"
+    for f in "${INSTALLER_FILES[@]}"; do
+      coscli cp "${PROJECT_ROOT}/${f}" "cos://${COS_BUCKET}/${INSTALLER_PREFIX}/${f}" -e "cos.${REGION}.myqcloud.com" 2>&1 \
+        && ok "coscli 上传安装器: ${INSTALLER_PREFIX}/${f}" || warn "安装器上传失败: ${f}"
+    done
   else
     warn "coscli 上传失败，尝试 Python SDK..."
   fi
@@ -237,17 +251,28 @@ client.upload_file(
     EnableMD5=True,
 )
 
+def make_public(key):
+    try:
+        client.put_object_acl(Bucket=bucket, Key=key, ACL='public-read')
+    except Exception as e:
+        print(f"[WARN] 设置公有读失败 ({key}) (可能 bucket 默认权限已公开): {e}")
+
 # 设置对象为公有读 (生成公开下载链接)
-try:
-    from qcloud_cos import CosConfig as CC
-    client.put_object_acl(
-        Bucket=bucket,
-        Key=cos_key,
-        ACL='public-read',
-    )
-    print("[OK] 已设置公有读权限")
-except Exception as e:
-    print(f"[WARN] 设置公有读失败 (可能 bucket 默认权限已公开): {e}")
+make_public(cos_key)
+
+# 同一份 ZIP 再传 latest (README / 前端指向 releases/timem-skill-latest.zip)
+latest_key = "$LATEST_COS_KEY"
+client.upload_file(Bucket=bucket, Key=latest_key, LocalFilePath=local_file, EnableMD5=True)
+make_public(latest_key)
+print(f"[OK] latest 包已上传: {latest_key}")
+
+# 前端一键命令引用的安装器 (installers/install-all.sh|ps1|core.ps1)
+project_root = "$PROJECT_ROOT"
+for name in ["install-all.sh", "install-all.ps1", "install-all.core.ps1"]:
+    key = "$INSTALLER_PREFIX/" + name
+    client.upload_file(Bucket=bucket, Key=key, LocalFilePath=project_root + "/" + name, EnableMD5=True)
+    make_public(key)
+    print(f"[OK] 安装器已上传: {key}")
 
 print("[OK] Python SDK 上传成功")
 PYEOF
@@ -259,17 +284,20 @@ fi
 if [[ "$UPLOAD_SUCCESS" == true ]]; then
   # 公开下载 URL 格式: https://{bucket}.cos.{region}.myqcloud.com/{key}
   DOWNLOAD_URL="https://${COS_BUCKET}.cos.${REGION}.myqcloud.com/${COS_KEY}"
+  LATEST_URL="https://${COS_BUCKET}.cos.${REGION}.myqcloud.com/${LATEST_COS_KEY}"
 
   ok "上传成功!"
   echo ""
   echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${GREEN}  COS 上传完成${NC}"
   echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  echo -e "  版本:     ${BLUE}${CUSTOM_VERSION}${NC}"
-  echo -e "  Bucket:   ${BLUE}${COS_BUCKET}${NC}"
-  echo -e "  Region:   ${BLUE}${REGION}${NC}"
-  echo -e "  COS Key:  ${BLUE}${COS_KEY}${NC}"
-  echo -e "  下载 URL: ${BLUE}${DOWNLOAD_URL}${NC}"
+  echo -e "  版本:      ${BLUE}${CUSTOM_VERSION}${NC}"
+  echo -e "  Bucket:    ${BLUE}${COS_BUCKET}${NC}"
+  echo -e "  Region:    ${BLUE}${REGION}${NC}"
+  echo -e "  COS Key:   ${BLUE}${COS_KEY}${NC}"
+  echo -e "  下载 URL:  ${BLUE}${DOWNLOAD_URL}${NC}"
+  echo -e "  latest URL: ${BLUE}${LATEST_URL}${NC}"
+  echo -e "  安装器:     ${BLUE}${INSTALLER_PREFIX}/install-all.{sh,ps1,core.ps1}${NC}"
   echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo ""
   info "用户安装方式:"

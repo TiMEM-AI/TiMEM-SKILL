@@ -4,8 +4,9 @@
 #
 # 功能:
 #   - 从 git tag 或 commit hash 读取版本号
-#   - 将 skills/ + 安装器启动脚本/核心脚本 + README.md 打包为 ZIP
-#   - 输出到 dist/release/timem-skill-{version}.zip
+#   - 将安装器需要的 5 个 skill + 安装脚本 + README 打包为 ZIP
+#     (清单与 install-all.sh / install-all.core.ps1 的 ALL_SKILLS 保持一致)
+#   - 输出到 dist/release/timem-skill-{version}.zip，并同步一份 timem-skill-latest.zip
 #   - 幂等: 重复运行会覆盖同名 ZIP
 #
 # 用法:
@@ -99,10 +100,13 @@ REQUIRED_FILES=(
   "README.md"
 )
 
+# 与 install-all.sh / install-all.core.ps1 的 ALL_SKILLS 保持一致
 REQUIRED_SKILLS=(
-  "skills/timem-memory-skill"
-  "skills/timem-rule-learning"
+  "dist/standalone/timem-coding-memory"
+  "dist/standalone/timem-general-memory"
+  "skills/timem-writing-memory"
   "skills/timem-knowledge"
+  "skills/timem-rule-learning"
 )
 
 info "项目根目录: $PROJECT_ROOT"
@@ -140,18 +144,13 @@ mkdir -p "$STAGING"
 
 info "准备打包内容到临时目录..."
 
-# 复制 5 个 skill 目录
+# 复制 5 个 skill 目录 (与安装器 ALL_SKILLS 一致，保留仓库相对路径布局，
+# 这样 install-all.sh / install-all.core.ps1 可以直接使用包内源文件)
 for s in "${REQUIRED_SKILLS[@]}"; do
-  skill_name=$(basename "$s")
-  cp -r "${PROJECT_ROOT}/${s}" "${STAGING}/${skill_name}"
-  ok "添加 skill: $skill_name"
+  mkdir -p "${STAGING}/$(dirname "$s")"
+  cp -r "${PROJECT_ROOT}/${s}" "${STAGING}/${s}"
+  ok "添加 skill: $s"
 done
-
-# 复制 shared 目录 (mcp-tools.md 等)
-if [[ -d "${PROJECT_ROOT}/skills/shared" ]]; then
-  cp -r "${PROJECT_ROOT}/skills/shared" "${STAGING}/shared"
-  ok "添加 shared/"
-fi
 
 # 复制安装脚本和文档
 for f in "${REQUIRED_FILES[@]}"; do
@@ -220,6 +219,11 @@ ZIP_SIZE=$(du -h "$ZIP_PATH" | cut -f1)
 # 跨平台一致，不依赖 zip -l / unzip -l 的输出格式，
 # 也避免 head -n 负数参数（busybox 不支持）和 grep -q 提前退出引发的 SIGPIPE。
 ZIP_CONTENTS=$(python3 -c "import zipfile; print(len(zipfile.ZipFile('$ZIP_PATH').namelist()))")
+
+# 同步一份 latest 包 (upload_cos.py 发布时要求 dist/release/timem-skill-latest.zip 存在)
+LATEST_ZIP_PATH="${OUTPUT_DIR}/timem-skill-latest.zip"
+cp -f "$ZIP_PATH" "$LATEST_ZIP_PATH"
+ok "同步 latest 包: $(basename "$LATEST_ZIP_PATH")"
 
 ok "打包成功!"
 echo ""

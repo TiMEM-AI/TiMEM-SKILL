@@ -54,6 +54,7 @@ $ALL_SKILLS = @(
   @{name="timem-general-memory"; path="dist/standalone/timem-general-memory"}
   @{name="timem-writing-memory"; path="skills/timem-writing-memory"}
   @{name="timem-knowledge"; path="skills/timem-knowledge"}
+  @{name="timem-rule-learning"; path="skills/timem-rule-learning"}
 )
 
 # Agent 矩阵
@@ -798,8 +799,17 @@ if ($SILENT_MODE) {
   Confirm-Install
 }
 
-# 下载 skills
-$skillDir = Download-Skills
+# 下载 skills (release ZIP 自带全部 skill 源时优先使用包内文件)
+$localSkillRoot = $null
+if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "skills\timem-knowledge\SKILL.md"))) {
+  $localSkillRoot = $PSScriptRoot
+}
+if ($localSkillRoot) {
+  Info "使用安装包自带 skills: $localSkillRoot"
+  $skillDir = $localSkillRoot
+} else {
+  $skillDir = Download-Skills
+}
 if (-not $skillDir) {
   Warn "TiMEM-SKILL 下载失败，skills 安装将跳过"
 }
