@@ -39,7 +39,7 @@ TIMEM_MCP_REPO="https://github.com/TiMEM-AI/timem-mcp"
 TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp/"
 TIMEM_SERVER_NAME="TiMEM-SPACE"
 TIMEM_API_HOST_DEFAULT="https://api.space.timem.cloud"
-TIMEM_AGENT_INSTRUCTION="每次对话都要查看timem-memory的skill，并调用TiMEM-SPACE中合适的接口进行正确的记忆传输流程"
+TIMEM_AGENT_INSTRUCTION="每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
 TIMEM_INSTRUCTION_MARKER_REGEX='TiMEM-SPACE|太忆空间|timem-memory'
 CODEX_CONFIG_PATH="${CODEX_HOME:-}"
 if [ -z "$CODEX_CONFIG_PATH" ]; then
@@ -101,11 +101,12 @@ resolve_trae_mcp_config() {
 TRAE_MCP_CONFIG_PATH="$(resolve_trae_mcp_config)"
 TRAE_CONFIG_PATH="$(dirname "$TRAE_MCP_CONFIG_PATH")"
 
-# 3 个 TiMEM skills (TiMEM-SPACE MCP 仅支持记忆工具): name:repo_relative_path
+# 4 个 TiMEM skills (TiMEM-SPACE MCP：记忆 + 知识库工具): name:repo_relative_path
 ALL_SKILLS=(
   "timem-coding-memory:dist/standalone/timem-coding-memory"
   "timem-general-memory:dist/standalone/timem-general-memory"
   "timem-writing-memory:skills/timem-writing-memory"
+  "timem-knowledge:skills/timem-knowledge"
 )
 
 # Agent 矩阵: name|detect_cmd|config_dir|skills_dir|mcp_config|format|root_key|has_skills|instruction_file|instruction_scope|instruction_create_if_missing|additional_detect_dir
@@ -1093,6 +1094,7 @@ interactive_select_skills() {
       timem-coding-memory)  desc="$(t "编程记忆" "Coding memory")" ;;
       timem-general-memory) desc="$(t "通用记忆" "General memory")" ;;
       timem-writing-memory) desc="$(t "写作记忆" "Writing memory")" ;;
+      timem-knowledge)      desc="$(t "知识库" "Knowledge base")" ;;
     esac
     printf "  [%d] %s (%s)\n" "$idx" "$skill_name" "$desc"
     idx=$((idx + 1))

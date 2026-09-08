@@ -26,7 +26,7 @@ $TIMEM_MCP_REPO = "https://github.com/TiMEM-AI/timem-mcp"
 $TIMEM_CLOUD_URL = "https://api.space.timem.cloud/mcp/"
 $TIMEM_API_HOST_DEFAULT = "https://api.space.timem.cloud"
 $TIMEM_SERVER_NAME = "TiMEM-SPACE"
-$TIMEM_AGENT_INSTRUCTION = "每次对话都要查看timem-memory的skill，并调用TiMEM-SPACE中合适的接口进行正确的记忆传输流程"
+$TIMEM_AGENT_INSTRUCTION = "每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
 $TIMEM_INSTRUCTION_MARKERS = @("TiMEM-SPACE", "太忆空间", "timem-memory")
 $CODEX_CONFIG_PATH = if ([string]::IsNullOrWhiteSpace($env:CODEX_HOME)) { "$env:USERPROFILE\.codex" } else { $env:CODEX_HOME }
 $QODER_CONFIG_PATH = if ([string]::IsNullOrWhiteSpace($env:QODER_CONFIG_DIR)) { "$env:USERPROFILE\.qoder" } else { $env:QODER_CONFIG_DIR }
@@ -53,6 +53,7 @@ $ALL_SKILLS = @(
   @{name="timem-coding-memory"; path="dist/standalone/timem-coding-memory"}
   @{name="timem-general-memory"; path="dist/standalone/timem-general-memory"}
   @{name="timem-writing-memory"; path="skills/timem-writing-memory"}
+  @{name="timem-knowledge"; path="skills/timem-knowledge"}
 )
 
 # Agent 矩阵
