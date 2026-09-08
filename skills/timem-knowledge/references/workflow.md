@@ -1,100 +1,94 @@
 # Knowledge Base Workflow
 
-## What belongs in the knowledge base
+## 什么该进知识库
 
-- Reference documents (PDFs, reports, specs, manuals)
-- Notes, meeting minutes, research summaries
-- Reusable content snippets (templates, boilerplate)
-- Domain-specific documents the user wants to retrieve later
+- 参考资料：PDF、报告、规范、手册
+- 会议纪要、研究综述、笔记
+- 可复用的内容片段（模板、样板）
+- 用户希望日后可检索的领域文档
 
-**Not** for knowledge base:
+**不该进知识库**：
 
-- Conversation history → memory
-- Code-level decisions → `domain=coding` memory
-- Style preferences → `domain=writing` memory
+- 对话历史、个人偏好 → 记忆（`create_memory`）
+- 代码级决策 → `domain=coding` 记忆
+- 写作风格偏好 → `domain=writing` 记忆
 
-## Knowledge vs Memory decision tree
+## 知识库 vs 记忆 决策树
 
+```text
+用户提问
+  → 答案可能藏在已上传的文档里吗？
+    → 是 → search_knowledge(query_text=...)
+    → 否 → 是个人偏好、过往决定、经验教训吗？
+      → 是 → search_memories(query_text=..., domain=...)
+      → 否 → 直接用模型知识回答（不调 TiMEM）
 ```
-User asks a question
-  → Is the answer likely in an uploaded document?
-    → Yes → search_knowledge(query=...)
-    → No  → Is it a personal preference, past decision, or lesson?
-      → Yes → search_memories(domain=..., query_text=...)
-      → No  → Answer from model knowledge (no TiMEM call)
-```
 
-When ambiguous, search **both** in parallel and merge results.
+拿不准时**并行查两边**，合并结果。记忆给"用户背景"，知识库给"资料依据"。
 
-## Search workflow
+## 检索流程
 
-1. **Trigger** — user asks about content from uploaded documents, or explicitly requests KB search.
-2. **Build query** — concise natural language question (required).
-3. **Call**:
-   ```
+1. **触发** —— 用户问及已上传文档的内容，或明确要求查知识库。
+2. **构造 query** —— 3–12 个词的任务导向查询（`query_text`，必填）。
+3. **调用**：
+   ```text
    search_knowledge(
-     query="<user's question>",
-     # kb_id omitted → auto-resolves to default KB
+     query_text="<用户的问题>",
+     # 省略 kb_id → 默认知识库；目标库未知时先 list_knowledge_bases
    )
    ```
-4. **Verify** — results are document fragments, not ground truth. Cross-check if possible.
-5. **Answer** — cite which document the info came from if available.
+4. **核验** —— 结果是文档片段而非标准答案，注意 `score` 与 `filename`；召回为空要如实说明，不编造引用。
+5. **回答** —— 注明信息来自哪个文件。
 
-## Upload workflow
+## 写入流程（文本）
 
-1. **Trigger** — user sends a file and wants it in the KB, or pastes content to archive.
-2. **Prepare** — file content must be Base64-encoded. The agent reads the file and encodes it.
-3. **Call**:
-   ```
-   upload_document(
-     file_content="<base64-encoded-bytes>",
-     filename="report.pdf",
-     # kb_id omitted → uploads to default KB
+1. **触发** —— 用户给出资料性文本并要求保存到知识库。
+2. **保持原文结构**，不要摘要压缩（知识库价值在完整可检索）。
+3. **调用**：
+   ```text
+   write_knowledge(
+     content="<原文>",
+     title="可选标题",
+     tags=["可选标签"],
+     # 省略 kb_id → 默认知识库
    )
    ```
-4. **Confirm** — returns `file_id` + `file_status: "pending"`. Processing is async.
-5. **Optional follow-up** — call `list_documents(status="pending")` to check when done.
+4. **确认** —— 返回文件记录，`sync_status: pending` 表示云端向量化进行中（异步，正常）。
+5. **话术** —— 告知"已进入向量化队列，稍后支持语义搜索"，不要立即轮询。
 
-## List workflow
+## 文件上传流程（二进制，MCP 暂不支持）
 
-### List knowledge bases
+1. 确认/创建 KB 拿 `kb_id`（`list_knowledge_bases` / `create_knowledge_base`）。
+2. 引导用户走控制台 / 前端 / REST：
+   ```bash
+   curl -X POST "https://api.space.timem.cloud/api/v1/knowledge/files/upload" \
+     -H "X-API-Key: <agent-api-key>" \
+     -F "kb_id=<kb_id>" -F "file=@doc.pdf"
+   ```
+3. 若文件可由 Agent 读取并提取文本（md/txt/代码），可提取后经 `write_knowledge` 入库，并说明这是文本化入库。
 
-When user asks "what KBs do I have?" or before first use:
+## 建库流程
 
-```
-list_knowledge_bases()
-```
+- 用户想新建分类库时：`create_knowledge_base(name=..., description=..., is_default=false)`。
+- `is_default=true` 会取消该用户其他库的默认标记，后续省略 `kb_id` 的操作落在它上面。
+- 建库只是建容器，内容仍需 `write_knowledge` 或文件上传写入。
 
-Returns `knowledge_bases[]` with `id`, `name`, `description`, `is_default`, `file_count`.
+## kb_id 决策
 
-### List documents
+- 大多数情况下省略 `kb_id` —— 服务端自动落到用户默认 KB。
+- 用户点名某个非默认库时，从 `list_knowledge_bases()` 结果中取 `id` 传入。
 
-When user asks what's in a KB, or to check upload status:
+## 错误处理
 
-```
-list_documents(
-  # kb_id omitted → default KB
-  status="success",   # optional filter
-  filename="report",  # optional fuzzy search
-)
-```
+| 情况 | 原因 | 动作 |
+|-------|------|------|
+| 写入/搜索报知识库不存在 | 用户无 KB 或 kb_id 错误 | 先 `list_knowledge_bases` 核对，必要时 `create_knowledge_base` |
+| 搜索召回为空 | 无匹配文档 / 云端降级 | 如实说明；可建议补充资料；也可并行查 `search_memories` 兜底用户背景 |
+| 写入后立刻搜不到 | 云端向量化异步 | 告知稍后生效，不要轮询 |
+| 工具调用失败（网络/鉴权） | MCP 连接或 key 问题 | 先 `ready` 排查；不反复重试，降级为无知识库模式回答 |
 
-## kb_id resolution
+## 限制
 
-- Omit `kb_id` in most cases — the MCP auto-resolves to the user's default KB.
-- Only pass explicit `kb_id` when user names a non-default KB.
-- Get `kb_id` values from `list_knowledge_bases()` result.
-
-## Error handling
-
-| Error | Cause | Action |
-|-------|-------|--------|
-| `NO_KNOWLEDGE_BASE` | User has no KB | Tell user to create one on the platform |
-| Empty search results | No matching docs | Suggest uploading relevant documents |
-| Upload `pending` forever | Processing stuck | Suggest checking via `list_documents` later |
-
-## Upload limits
-
-- File content is Base64-encoded; practical limit ~20MB after encoding.
-- Supported formats depend on backend (typically PDF, TXT, MD, DOCX).
-- Processing is asynchronous — tool returns immediately with `pending` status.
+- `write_knowledge` 只接受**文本**；二进制文件走 REST/控制台。
+- `top_k` 上限 10。
+- 云端检索失败时后端会静默降级本地关键词匹配，召回质量会下降——结果异常时可提醒用户稍后重试。
