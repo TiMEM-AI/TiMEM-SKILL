@@ -592,7 +592,7 @@ mcp_servers:
   ${server_name}:
     url: "${TIMEM_CLOUD_URL}"
     headers:
-      X-API-Key: ***
+      X-API-Key: ${API_KEY}
 YAMLEOF
   success "MCP 配置已追加: $config_file"
   return 0
