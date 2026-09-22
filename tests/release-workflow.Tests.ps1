@@ -3,11 +3,14 @@ Describe 'COS release workflow' {
   $workflow = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path (Join-Path (Join-Path $root '.github') 'workflows') 'ci.yml')
   $uploadScript = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path (Join-Path $root 'scripts') 'upload_cos.py')
 
-  It 'gates publishing on the Windows and Bash installer jobs' {
-    $workflow | Should Match '(?m)^\s{2}test-installer:'
-    $workflow | Should Match "runs-on:.*RUNNER_LABEL_WINDOWS.*windows-latest"
-    $workflow | Should Match 'Invoke-Pester.*tests'
-    $workflow | Should Match 'needs:\s*\[test-installer,\s*test-shell-installer\]'
+  It 'gates publishing on the Bash installer job and declares no unrunnable job' {
+    # 仓库的 runner 全部是 Linux，Windows 的 test-installer job 永远调度不到，已移除。
+    # 关键回归点：job 被删掉后 needs 若仍引用它，GitHub 判定整个 workflow 无效
+    # (Job 'build-packages' depends on unknown job 'test-installer')，CI 一个 job 都不启动。
+    $workflow | Should Not Match '(?m)^\s{2}test-installer:'
+    $workflow | Should Not Match 'RUNNER_LABEL_WINDOWS'
+    $workflow | Should Not Match 'Invoke-Pester'
+    $workflow | Should Not Match 'needs:[^\n]*test-installer'
     $workflow | Should Match "cancel-in-progress:.*github\.event_name.*pull_request"
   }
 
@@ -15,7 +18,7 @@ Describe 'COS release workflow' {
     $workflow | Should Match 'test-shell-installer:'
     $workflow | Should Match 'bash tests/install-all\.sh\.Tests\.sh'
     $buildJob = $workflow.Substring($workflow.IndexOf('build-packages:'))
-    $buildJob | Should Match 'needs:\s*\[test-installer,\s*test-shell-installer\]'
+    $buildJob | Should Match 'needs:\s*\[test-shell-installer\]'
   }
 
   It 'is triggered when a release artifact or installer changes' {
