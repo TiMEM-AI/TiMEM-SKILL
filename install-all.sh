@@ -26,7 +26,7 @@
 #   --help              显示帮助
 #
 # MCP 配置方式:
-#   默认 (Cloud HTTP):  "url": "https://api.timem.cloud/mcp" + headers (零安装)
+#   默认 (Cloud HTTP):  "url": "https://api.space.timem.cloud/mcp/" + headers (零安装)
 
 set -uo pipefail
 
@@ -35,10 +35,8 @@ set -uo pipefail
 # ============================================================================
 
 TIMEM_SKILL_REPO="https://github.com/TiMEM-AI/TiMEM-SKILL"
-TIMEM_MCP_REPO="https://github.com/TiMEM-AI/timem-mcp"
 TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp/"
 TIMEM_SERVER_NAME="TiMEM-SPACE"
-TIMEM_API_HOST_DEFAULT="https://api.space.timem.cloud"
 TIMEM_AGENT_INSTRUCTION="每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
 TIMEM_INSTRUCTION_MARKER_REGEX='TiMEM-SPACE|太忆空间|timem-memory'
 CODEX_CONFIG_PATH="${CODEX_HOME:-}"
@@ -493,31 +491,71 @@ merge_mcp_toml() {
 
   mkdir -p "$(dirname "$config_file")"
 
-  if [ -f "$config_file" ] && grep -q "^\[mcp_servers\.${server_name}\]" "$config_file" 2>/dev/null; then
-    if [ "$FORCE" = true ]; then
-      warn "TOML MCP 已存在，--force 对 TOML 精确覆盖暂不支持，跳过"
-      return 0
-    else
-      info "MCP 配置已存在，跳过: $config_file"
-      return 0
-    fi
+  local result
+  result=$(python3 - "$config_file" "$server_name" "$TIMEM_CLOUD_URL" "$API_KEY" "$FORCE" 2>&1 <<'PYEOF'
+import os, shutil, sys
+
+try:
+    config_path, server_name, cloud_url, api_key, force = sys.argv[1:6]
+    force = force == "true"
+    table = "mcp_servers." + server_name
+
+    original = ""
+    if os.path.exists(config_path):
+        with open(config_path, encoding="utf-8") as f:
+            original = f.read()
+
+    eol = "\r\n" if "\r\n" in original else "\n"
+    block = eol.join([
+        f"[{table}]",
+        f'url = "{cloud_url}"',
+        "",
+        f"[{table}.http_headers]",
+        f'X-API-Key = "{api_key}"',
+        "",
+    ])
+
+    # 整表替换：删掉该表及其所有子表 (a.b / a.b.c ...)，其余内容按行原样保留。
+    # 老版本这里写过 uvx stdio 配置，不整表替换就永远修不好已安装的用户。
+    # 按行删除而不是 tomllib 往返：后者会重排整个 config.toml 并丢掉注释。
+    kept = []
+    skipping = False
+    for line in original.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]") and not stripped.startswith("[["):
+            header = stripped.strip("[]").strip()
+            skipping = header == table or header.startswith(table + ".")
+        if not skipping:
+            kept.append(line.rstrip("\r"))
+
+    body = eol.join(kept).rstrip("\r\n")
+    new_content = (body + eol + eol + block) if body else block
+
+    if new_content == original:
+        print("SKIP"); sys.exit(0)
+
+    if original and not force:
+        shutil.copy2(config_path, config_path + ".bak")
+
+    with open(config_path, "w", encoding="utf-8", newline="") as f:
+        f.write(new_content)
+    print("CREATED" if not original else "MERGED")
+except (OSError, UnicodeDecodeError) as e:
+    print(f"ERROR:{e}", file=sys.stderr); sys.exit(2)
+PYEOF
+  )
+  local rc=$?
+
+  if [ $rc -ne 0 ]; then
+    error "合并 $config_file 失败: $result"
+    return 1
   fi
 
-  [ -f "$config_file" ] && [ "$FORCE" = false ] && cp "$config_file" "$config_file.bak" 2>/dev/null || true
-
-  # Codex TOML: stdio 模式 (Codex 不原生支持 http MCP)
-  cat >> "$config_file" <<TOMLEOF
-
-[mcp_servers.${server_name}]
-command = "uvx"
-args = ["--from", "git+${TIMEM_MCP_REPO}.git@main", "timem-mcp"]
-
-[mcp_servers.${server_name}.env]
-TIMEM_API_KEY = "${API_KEY}"
-TIMEM_API_HOST = "${TIMEM_API_HOST_DEFAULT}"
-TIMEM_AGENT_ID = "${agent_name}"
-TOMLEOF
-  success "MCP 配置已追加: $config_file"
+  case "$result" in
+    CREATED) success "MCP 配置已写入: $config_file" ;;
+    MERGED)  success "MCP 配置已更新: $config_file" ;;
+    SKIP)    info "MCP 配置已存在且相同，跳过: $config_file" ;;
+  esac
   return 0
 }
 
@@ -1273,7 +1311,7 @@ info "Agent 指令注入: $([ "$SKIP_AGENT_INSTRUCTIONS" = true ] && echo '跳�
 
 # 检查依赖
 if ! command -v python3 &>/dev/null; then
-  error "需要 python3 (用于 JSON 合并)"
+  error "需要 python3 (用于 JSON/TOML 合并)"
   exit 1
 fi
 if ! command -v curl &>/dev/null; then

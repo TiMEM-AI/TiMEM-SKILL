@@ -94,7 +94,12 @@ Describe 'install-all.ps1 Windows functional behavior' {
 
       $content = [IO.File]::ReadAllText($configFile)
       ([regex]::Matches($content, '(?m)^\[mcp_servers\.TiMEM-SPACE\]\s*$').Count) | Should Be 1
-      ([regex]::Matches($content, '(?m)^\[mcp_servers\.TiMEM-SPACE\.env\]\s*$').Count) | Should Be 1
+      ([regex]::Matches($content, '(?m)^\[mcp_servers\.TiMEM-SPACE\.http_headers\]\s*$').Count) | Should Be 1
+      ($content -match 'url = "https://api\.space\.timem\.cloud/mcp/"') | Should Be $true
+      ($content -match 'X-API-Key = "test-key-12345678"') | Should Be $true
+      # Codex 与其余 agent 一致走 Cloud HTTP：不得再写入本地 stdio 依赖
+      ($content -match 'uvx') | Should Be $false
+      ($content -match 'git\+') | Should Be $false
 
       $python = Get-Command python -ErrorAction SilentlyContinue
       if ($python) {

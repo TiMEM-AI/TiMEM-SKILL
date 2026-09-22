@@ -94,8 +94,82 @@ test_codex_home_override() {
 
   test -f "$instruction_file"
   cmp -s "$instruction_file.expected" "$instruction_file"
-  grep -q 'TiMEM-SPACE' "$config_dir/config.toml"
+  grep -q 'url = "https://api.space.timem.cloud/mcp/"' "$config_dir/config.toml"
   test ! -e "$profile_dir/.codex/AGENTS.md"
+}
+
+test_codex_mcp_uses_cloud_http() {
+  local profile_dir="$TEST_ROOT/codex-http-profile"
+  local config_file="$profile_dir/.codex/config.toml"
+
+  mkdir -p "$profile_dir/.codex"
+  printf '# existing codex config\n' > "$config_file"
+
+  run_installer "$profile_dir" codex
+  cp "$config_file" "$config_file.first-run"
+  run_installer "$profile_dir" codex
+
+  grep -q 'url = "https://api.space.timem.cloud/mcp/"' "$config_file"
+  grep -q '^\[mcp_servers\.TiMEM-SPACE\.http_headers\]$' "$config_file"
+  grep -q 'X-API-Key = "test-key-12345678"' "$config_file"
+
+  # Codex 也必须走 Cloud HTTP：不得再出现本地 stdio 依赖
+  test "$(grep -c '^\[mcp_servers\.TiMEM-SPACE\]$' "$config_file")" -eq 1
+  test "$(grep -c '\.env\]$' "$config_file")" -eq 0
+  test "$(grep -c 'uvx' "$config_file")" -eq 0
+  test "$(grep -c 'git+' "$config_file")" -eq 0
+
+  # 重复安装必须字节级幂等（不重复追加、不累积空行）
+  cmp -s "$config_file.first-run" "$config_file"
+}
+
+test_codex_mcp_migrates_legacy_stdio_toml() {
+  local profile_dir="$TEST_ROOT/codex-migrate-profile"
+  local config_file="$profile_dir/.codex/config.toml"
+
+  mkdir -p "$profile_dir/.codex"
+  cat > "$config_file" <<'TOMLEOF'
+# existing codex config
+model = "gpt-5"
+
+[mcp_servers.TiMEM-SPACE]
+command = "uvx"
+args = ["--from", "git+https://github.com/TiMEM-AI/timem-mcp.git@main", "timem-mcp"]
+
+[mcp_servers.TiMEM-SPACE.env]
+TIMEM_API_KEY = "old-key"
+TIMEM_API_HOST = "https://api.space.timem.cloud"
+TIMEM_AGENT_ID = "codex"
+
+[mcp_servers.other]
+url = "https://other.example/mcp"
+TOMLEOF
+
+  run_installer "$profile_dir" codex
+  run_installer "$profile_dir" codex
+
+  # 整表替换：无重复表、无残留 .env 子表、无 stdio 残渣
+  test "$(grep -c '^\[mcp_servers\.TiMEM-SPACE\]$' "$config_file")" -eq 1
+  test "$(grep -c '^\[mcp_servers\.TiMEM-SPACE\.http_headers\]$' "$config_file")" -eq 1
+  test "$(grep -c '\.env\]$' "$config_file")" -eq 0
+  test "$(grep -c 'uvx' "$config_file")" -eq 0
+  test "$(grep -c 'TIMEM_AGENT_ID' "$config_file")" -eq 0
+  grep -q 'url = "https://api.space.timem.cloud/mcp/"' "$config_file"
+  grep -q 'X-API-Key = "test-key-12345678"' "$config_file"
+
+  # 无关内容与相邻表必须原样保留
+  grep -q '# existing codex config' "$config_file"
+  grep -q '^model = "gpt-5"$' "$config_file"
+  test "$(grep -c '^\[mcp_servers\.other\]$' "$config_file")" -eq 1
+  grep -q 'url = "https://other.example/mcp"' "$config_file"
+
+  # 旧配置已备份
+  grep -q 'uvx' "$config_file.bak"
+
+  # TOML 必须可解析（python3 < 3.11 无 tomllib，跳过）
+  if python3 -c 'import tomllib' 2>/dev/null; then
+    python3 -c 'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))' "$config_file"
+  fi
 }
 
 test_codex_reuses_existing_agent_md_variant() {
@@ -366,6 +440,8 @@ test_skip_agent_instructions() {
 
 test_codex_instruction_injection
 test_codex_home_override
+test_codex_mcp_uses_cloud_http
+test_codex_mcp_migrates_legacy_stdio_toml
 test_codex_reuses_existing_agent_md_variant
 test_cursor_user_rule_injection
 test_claude_marker_preserves_file
