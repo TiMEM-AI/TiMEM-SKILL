@@ -22,9 +22,7 @@ $ErrorActionPreference = "Stop"
 # 常量
 # ============================================================================
 $TIMEM_COS_BASE_URL = "https://careerfun-1257357192.cos.ap-beijing.myqcloud.com"
-$TIMEM_MCP_REPO = "https://github.com/TiMEM-AI/timem-mcp"
 $TIMEM_CLOUD_URL = "https://api.space.timem.cloud/mcp/"
-$TIMEM_API_HOST_DEFAULT = "https://api.space.timem.cloud"
 $TIMEM_SERVER_NAME = "TiMEM-SPACE"
 $TIMEM_AGENT_INSTRUCTION = "每次对话都要查看timem-memory的skill，并调用TiMEM-SPACE中合适的接口进行正确的记忆传输流程"
 $TIMEM_INSTRUCTION_MARKERS = @("TiMEM-SPACE", "太忆空间", "timem-memory")
@@ -599,14 +597,11 @@ function Merge-McpToml($configFile, $agentName) {
   $serverName = $TIMEM_SERVER_NAME
   $tomlContent = @"
 
-[mcp_servers.$serverName]
-command = "uvx"
-args = ["--from", "git+$TIMEM_MCP_REPO.git@main", "timem-mcp"]
+[mcp_servers.${serverName}]
+url = "$TIMEM_CLOUD_URL"
 
-[mcp_servers.$serverName.env]
-TIMEM_API_KEY = "$API_KEY"
-TIMEM_API_HOST = "$TIMEM_API_HOST_DEFAULT"
-TIMEM_AGENT_ID = "$agentName"
+[mcp_servers.${serverName}.http_headers]
+X-API-Key = "$API_KEY"
 "@
   $existingContent = if (Test-Path $configFile) { [IO.File]::ReadAllText($configFile) } else { "" }
   $existingContent = Remove-TomlTables $existingContent "mcp_servers.$serverName"
