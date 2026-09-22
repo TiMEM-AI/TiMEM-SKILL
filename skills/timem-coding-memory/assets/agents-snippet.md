@@ -1,6 +1,6 @@
 ## TiMEM coding memory (Skill + MCP)
 
-When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the **timem-coding-memory** skill (prefer [timem-skill](https://github.com/TiMEM-AI/timem-skill) `dist/standalone/`; `dist/full/` also fine).
+When [timem-mcp](https://pypi.org/project/timem-mcp/) is connected, follow the **timem-coding-memory** skill (prefer [timem-skill](https://github.com/TiMEM-AI/timem-skill) `dist/standalone/`; `dist/full/` also fine).
 
 `session_id` = stable repo name (e.g. `timem-platform-backend`)
 

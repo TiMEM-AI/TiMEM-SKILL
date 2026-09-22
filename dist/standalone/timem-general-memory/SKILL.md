@@ -153,7 +153,7 @@ Never omit; never use a random UUID per turn.
 
 ### TiMEM MCP atomic tools (shared reference)
 
-Skills orchestrate **when** to call these tools. Requires [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) connected in your MCP client.
+Skills orchestrate **when** to call these tools. Requires [timem-mcp](https://pypi.org/project/timem-mcp/) connected in your MCP client.
 
 Use atomic MCP memory tools only: `search_memories`, `create_memory`, `delete_memory` (and `classify_memory_scene` when domain is unclear).
 

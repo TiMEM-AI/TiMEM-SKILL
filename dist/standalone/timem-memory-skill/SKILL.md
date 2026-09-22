@@ -109,7 +109,7 @@ Optional AGENTS.md paste template (human-facing, not required at runtime): in th
 
 ## MCP tools (memory skill)
 
-Skills orchestrate **when** to call these tools. Requires [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) connected in your MCP client.
+Skills orchestrate **when** to call these tools. Requires [timem-mcp](https://pypi.org/project/timem-mcp/) connected in your MCP client.
 
 Use atomic MCP memory tools only: `search_memories`, `create_memory`, `delete_memory` (and `classify_memory_scene` when the scene is unclear).
 

@@ -53,7 +53,7 @@ Input: User says "记住，我们的文案风格要简洁直接"
 
 ## Prerequisites
 
-- [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) connected
+- [timem-mcp](https://pypi.org/project/timem-mcp/) connected
 - MCP tools: see [references/mcp-tools.md](references/mcp-tools.md)
 
 ## Parameters

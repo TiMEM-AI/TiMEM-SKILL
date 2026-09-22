@@ -1,6 +1,6 @@
 ## TiMEM memory skill (Skill + MCP)
 
-When [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) is connected, follow the **timem-memory-skill** skill (prefer [timem-skill](https://github.com/TiMEM-AI/timem-skill) `dist/standalone/`; `dist/full/` also fine).
+When [timem-mcp](https://pypi.org/project/timem-mcp/) is connected, follow the **timem-memory-skill** skill (prefer [timem-skill](https://github.com/TiMEM-AI/timem-skill) `dist/standalone/`; `dist/full/` also fine).
 
 ### Per-turn workflow (atomic MCP tools)
 

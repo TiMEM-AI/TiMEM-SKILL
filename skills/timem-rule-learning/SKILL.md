@@ -48,7 +48,7 @@ Input: User says "记住，每次改完代码都要跑 pnpm lint 再提交"
 
 ## Prerequisites
 
-- [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) with all 8 public Rule tools connected (`full` or optional `rule` Tool Profile)
+- [timem-mcp](https://pypi.org/project/timem-mcp/) with all 8 public Rule tools connected (`full` or optional `rule` Tool Profile)
 - MCP tools: [references/mcp-tools.md](references/mcp-tools.md) — **self-contained**; this skill does not require `skills/shared`
 
 ## Parameters

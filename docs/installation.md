@@ -1,6 +1,6 @@
 # Installation
 
-Install [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) first, then install one or more Agent Skills.
+Install [timem-mcp](https://pypi.org/project/timem-mcp/) first, then install one or more Agent Skills.
 
 ## Prerequisites
 

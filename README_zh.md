@@ -1,6 +1,6 @@
 # TiMEM Skills
 
-面向 [TiMEM](https://timem.cloud) 记忆工作流的 Agent Skills。Skill 负责**编排**何时、如何调用 [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) 的原子工具——记忆（`search_memories`、`create_memory`、`delete_memory`）与规则（`recall_rules`、`learn_rule`、`record_rule_outcome`）。
+面向 [TiMEM](https://timem.cloud) 记忆工作流的 Agent Skills。Skill 负责**编排**何时、如何调用 [timem-mcp](https://pypi.org/project/timem-mcp/) 的原子工具——记忆（`search_memories`、`create_memory`、`delete_memory`）与规则（`recall_rules`、`learn_rule`、`record_rule_outcome`）。
 
 **语言：** [English](README.md) | 简体中文
 
@@ -94,7 +94,7 @@ python /path/to/timem-skill/scripts/install.py --skill coding --target agents
 
 ## 前置条件
 
-1. 在 MCP 客户端配置 [timem-mcp](https://github.com/TiMEM-AI/timem-mcp)（`TiMEM_API_KEY`）。
+1. 在 MCP 客户端配置 [timem-mcp](https://pypi.org/project/timem-mcp/)（`TiMEM_API_KEY`）。
 2. 安装所需 Skill 包（见上与 [docs/installation.md](docs/installation.md)）。
 
 ## 架构

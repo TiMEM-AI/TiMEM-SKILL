@@ -1,6 +1,6 @@
 # TiMEM Skills
 
-Agent Skills for [TiMEM](https://timem.cloud) memory workflows. Skills orchestrate **when and how** to call [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) atomic tools — memories (`search_memories`, `create_memory`, `delete_memory`) and rules (`recall_rules`, `learn_rule`, `record_rule_outcome`).
+Agent Skills for [TiMEM](https://timem.cloud) memory workflows. Skills orchestrate **when and how** to call [timem-mcp](https://pypi.org/project/timem-mcp/) atomic tools — memories (`search_memories`, `create_memory`, `delete_memory`) and rules (`recall_rules`, `learn_rule`, `record_rule_outcome`).
 
 **Language:** English | [简体中文](README_zh.md)
 
@@ -99,7 +99,7 @@ Source of truth for development lives under `skills/`. User-facing coding and ge
 
 ## Prerequisites
 
-1. Configure [timem-mcp](https://github.com/TiMEM-AI/timem-mcp) in your MCP client (`TiMEM_API_KEY`).
+1. Configure [timem-mcp](https://pypi.org/project/timem-mcp/) in your MCP client (`TiMEM_API_KEY`).
 2. Install the skill package(s) you need (see above and [docs/installation.md](docs/installation.md)).
 
 ## Architecture
