@@ -1,5 +1,5 @@
 ---
-name: 跨Agent记忆-太忆 TiMEM
+name: 记忆管理·太忆空间TiMEM SPACE
 description: >-
   TiMEM long-term memory skill covering coding, general, and writing domains.
   AUTO on EVERY turn when TiMEM MCP is connected: call search_memories BEFORE
@@ -7,8 +7,8 @@ description: >-
   no skip. If user message contains "记", MUST call create_memory. Ambiguous:
   classify_memory_scene.
 version: "1.0.4"
-display_name: 太忆空间 记忆连接技
-display_name_en: TiMEM Memory Skill
+display_name: 记忆管理·太忆空间TiMEM SPACE
+display_name_en: TiMEM SPACE Memory Skill
 description_zh: '请访问：https://space.timem.cloud/ 你的所有 AI 助手， 终于共用同一个大脑 说一次"记住"，换多少个 Agent 都记得你。 太忆空间让你的记忆随你走。'
 description_en: 'Please visit: https://space.timem.cloud/. All your AI assistants finally share one single brain. Say "remember" once, and no matter how many Agents you switch to, they will remember you. TiMEM-Space lets your memories travel with you.'
 ---
