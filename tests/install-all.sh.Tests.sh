@@ -4,7 +4,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/timem-shell-install-test.XXXXXX")"
-INSTRUCTION="每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
+INSTRUCTION="每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；新会话首条消息先问是否持续逐条保存；同意后再问个人项目或未归类；拒绝后保持关闭，直到用户主动要求开始保存；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
 
 cleanup() {
   rm -rf "$TEST_ROOT"

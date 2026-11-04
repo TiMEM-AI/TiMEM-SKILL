@@ -1,6 +1,6 @@
 name: timem-coding-memory
 version: 0.1.0
-description: 代码场景个人记忆。保存前询问本次会话是否存储以及目标项目。
+description: 代码场景个人记忆。首条消息询问是否开启持续保存，同意后再选择归属。
 triggers:
   - "coding memory"
   - "search memories"

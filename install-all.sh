@@ -37,7 +37,7 @@ set -uo pipefail
 TIMEM_COS_BASE_URL="https://careerfun-1257357192.cos.ap-beijing.myqcloud.com"
 TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp/"
 TIMEM_SERVER_NAME="TiMEM-SPACE"
-TIMEM_AGENT_INSTRUCTION="每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
+TIMEM_AGENT_INSTRUCTION="每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；新会话首条消息先问是否持续逐条保存；同意后再问个人项目或未归类；拒绝后保持关闭，直到用户主动要求开始保存；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
 TIMEM_INSTRUCTION_MARKER_REGEX='TiMEM-SPACE|太忆空间|timem-memory'
 CODEX_CONFIG_PATH="${CODEX_HOME:-}"
 if [ -z "$CODEX_CONFIG_PATH" ]; then
