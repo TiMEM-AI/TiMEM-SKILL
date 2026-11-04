@@ -33,6 +33,4 @@ When `count=0`, read optional fields: `memory_gap`, `guidance`, `elevate_create`
 - Work from codebase; empty search ≠ auto-create.
 - `elevate_create` is a soft hint, not a command — still apply your own judgment.
 
-## No skip
-
-No skip conditions. Every coding turn: search before working, create after replying.
+空结果不授权写入。

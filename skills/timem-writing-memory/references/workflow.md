@@ -1,62 +1,14 @@
-# Writing scene workflow
+# 写作记忆工作流
 
-## Search workflow
+## 本次会话的保存确认
 
-**Default: search** when prior style/audience may help. When unsure → search.
+每次处理完用户的新请求，询问是否保存本次会话内容和目标项目：「这次会话要保存到太忆空间吗？如果保存，请指定个人项目，也可以选『未归类』。」
+用户已明确说「把这段保存到 X」时，这句话同时给出了本次授权和目标，无需重复询问。
+只说「保存」就只追问目标；只提到项目名称、读取记忆、绑定目录或讨论 Skill 行为，都不构成写入授权。
+同一轮中多个 Skill 只由一个入口询问一次。用户已拒绝本次保存时不要再问。
+用户拒绝、没有答复或项目尚不明确时，继续原任务，写入调用为零；不要排队补写。
+只提交用户这次同意的内容。授权在本次保存后用尽，后续新增内容或新会话重新询问；不要把确认消息本身作为新待存内容。
 
-1. **Trigger** — need prior style, tone, audience, or series conventions? OR drafting where those may apply without explicit recall wording? → **search**
-2. **Query** — 3–12 words: style, audience, tone keywords (required).
-3. **Call**:
-   ```
-   search_memories(
-     query_text="<style or audience keywords>",
-     domain="writing",
-     session_id="<optional series name>",
-     limit=5,
-   )
-   ```
-4. **Apply** — use verified constraints in the draft; abstain if hits are stale.
-
-**Skip search** only for: one-off grammar/punctuation with no reusable style context.
-
-**Do not under-call** — “I can draft without tools” is not a skip reason when style/audience may matter.
-
-## Create workflow
-
-Gate hits only when reusable writing rules are confirmed.
-
-1. **Trigger** — user locks in reusable writing rules or preferences?
-2. **Summarize** — style/audience/tone in 1–3 sentences.
-3. **Call**:
-   ```
-   create_memory(
-     domain="writing",
-     session_id="<series name if applicable>",
-     messages=[
-       {"role": "user", "content": "<constraint in user's words>"},
-       {"role": "assistant", "content": "<confirmation of stored style rule>"},
-     ],
-   )
-   ```
-
-More search ≠ more create.
-
-## session_id guidance
-
-| Use case | session_id |
-|----------|------------|
-| Global writing habit | Omit or `writing-default` |
-| Blog series / campaign | Stable name e.g. `blog-2026` |
-| Single doc project | e.g. `product-launch-copy` |
-
-## Scene boundary
-
-Technical implementation questions → `timem-coding-memory` (`domain=coding`).
-
-Personal non-writing prefs → `timem-general-memory` (`domain=general`).
-
-Optional: `classify_memory_scene(messages)` when ambiguous.
-
-## Task end
-
-At most **0–3** writing memories per task; prefer durable style rules over one-off phrasing.
+用户确认保存后，使用个人 MCP 核对服务、账号及目标。对指定项目按名称查询候选、核对 UUID 并解析上下文；同名时请用户选择。已有绑定只能作为候选，不能代替本次选择或自动改写目录绑定。
+选定项目或明确选择「未归类」时，使用服务端支持的 personal-project-v1 上下文调用 `create_project_memory`，核对回执后再报告结果。项目工具不可用时停止，不能退回普通记忆或团队连接。
+仅当用户明确选择未归类、个人服务只提供旧版通用记忆工具且当前不在项目绑定模式时，才可按实际工具定义使用 `create_memory`。

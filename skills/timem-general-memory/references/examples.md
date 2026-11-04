@@ -1,33 +1,11 @@
-# General memory examples
+# 会话保存示例
 
-## Example 1 — Preference recall (search + create)
-
-**User:** "你记得我喜欢什么样的回答风格吗？"
-
-**Actions:** `search_memories(query_text="回答风格 偏好", domain="general", session_id="personal", limit=5)` → verify → answer → `create_memory(session_id="personal", messages=[this exchange])`.
-
-## Example 2 — Save preference (explicit remember)
-
-**User:** "请记住：以后解释技术问题用中文，尽量简洁。"
-
-**Actions:** search (optional dedup) → answer → `create_memory(domain="general", session_id="personal", messages=[...])`.
-
-## Example 3 — Trivia (skip both)
-
-**User:** "今天星期几？" → No search, no create.
-
-## Example 4 — Scoped topic
-
-**User:** "关于 TiMEM 产品，我们之前定的目标用户是谁？"
-
-**Actions:** `search_memories(query_text="TiMEM 目标用户", session_id="timem-product", limit=5)` → answer → create.
-
-## Example 5 — Personalized task without recall wording (search + create)
-
-**User:** "帮我写一段自我介绍。"
-
-**Actions:** Search `自我介绍 偏好 背景` (`session_id=personal`) → answer → create (the exchange may hold durable background).
-
-## Example 6 — Pure mood (skip create)
-
-**User:** "今天有点累，随便聊聊吧。" → Skip search. Skip create.
+| 用户的回复 | 下一步 | 写入次数 |
+| --- | --- | --- |
+| “不存”或未回复 | 继续当前任务 | 0 |
+| “帮我记一下” | 追问存到哪个项目，等待回复 | 0 |
+| “查询项目 A 的记忆” | 只读项目 A | 0 |
+| “把这段存到项目 A” | 在个人连接解析唯一的 A，核对范围后提交本次内容 | 1 |
+| “存到项目 A”，但有两个同名项目 | 展示候选并等待选择 | 0 |
+| “存到未归类” | 核对个人未归类作用域，按该范围保存 | 1 |
+| 上次同意过，或目录里已绑定 A | 重新询问本次意愿和目标 | 0 |

@@ -245,7 +245,7 @@ Describe 'install-all.ps1 Windows functional behavior' {
     $configDir = Join-Path (Join-Path (Join-Path $testRoot 'appdata') 'Trae') 'User'
     $configFile = Join-Path $configDir 'mcp.json'
     $ruleFile = Join-Path (Join-Path (Join-Path $profileDir '.trae') 'user_rules') 'timem-memory.md'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
     $expectedContent = (@(
       '---',
       'alwaysApply: true',
@@ -281,7 +281,7 @@ Describe 'install-all.ps1 Windows functional behavior' {
     $configDir = Join-Path $profileDir '.cursor'
     $configFile = Join-Path $configDir 'mcp.json'
     $ruleFile = Join-Path $configDir 'rules\timem-memory.mdc'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
     $expectedContent = (@(
       '---',
       'description: "TiMEM memory workflow"',
@@ -429,7 +429,7 @@ other_setting: true
     $profileDir = Join-Path $testRoot 'profile'
     $configDir = Join-Path $profileDir '.codex'
     $instructionFile = Join-Path $configDir 'AGENTS.md'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
 
     try {
       New-Item -ItemType Directory -Force -Path $configDir,(Join-Path $testRoot 'appdata'),(Join-Path $testRoot 'temp') | Out-Null
@@ -467,7 +467,7 @@ other_setting: true
     $configDir = Join-Path $testRoot 'custom-codex'
     $instructionFile = Join-Path $configDir 'AGENTS.md'
     $defaultInstructionFile = Join-Path (Join-Path $profileDir '.codex') 'AGENTS.md'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
 
     try {
       New-Item -ItemType Directory -Force -Path $configDir,(Join-Path $testRoot 'appdata'),(Join-Path $testRoot 'temp') | Out-Null
@@ -517,7 +517,7 @@ other_setting: true
     $profileDir = Join-Path $testRoot 'profile'
     $configDir = Join-Path $profileDir '.qoder'
     $instructionFile = Join-Path $configDir 'AGENTS.md'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
 
     try {
       New-Item -ItemType Directory -Force -Path $configDir,(Join-Path $testRoot 'appdata'),(Join-Path $testRoot 'temp') | Out-Null
@@ -544,7 +544,7 @@ other_setting: true
     $configDir = Join-Path $testRoot 'custom-qoder'
     $instructionFile = Join-Path $configDir 'AGENTS.md'
     $defaultInstructionFile = Join-Path (Join-Path $profileDir '.qoder') 'AGENTS.md'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
 
     try {
       New-Item -ItemType Directory -Force -Path $configDir,(Join-Path $testRoot 'appdata'),(Join-Path $testRoot 'temp') | Out-Null
@@ -573,7 +573,7 @@ other_setting: true
     $opsWorkspace = Join-Path $configDir 'workspace-ops'
     $researchWorkspace = Join-Path $profileDir '.openclaw-research'
     $configuredDefaultWorkspace = Join-Path $profileDir '.configured-openclaw'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
     $config = @'
 {"agents":{"defaults":{"workspace":"~/.configured-openclaw"},"list":[{"id":"work","workspace":"~/.openclaw-work"},{"id":"ops"}],"entries":{"research":{"workspace":"~/.openclaw-research"}}},"mcp":{"servers":{}}}
 '@
@@ -612,7 +612,7 @@ other_setting: true
     $configDir = Join-Path $testRoot 'custom-hermes'
     $instructionFile = Join-Path $configDir 'SOUL.md'
     $defaultInstructionFile = Join-Path (Join-Path $profileDir '.hermes') 'SOUL.md'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
 
     try {
       New-Item -ItemType Directory -Force -Path $configDir,(Join-Path $testRoot 'appdata'),(Join-Path $testRoot 'temp') | Out-Null
@@ -660,7 +660,7 @@ other_setting: true
     $profileDir = Join-Path $testRoot 'profile'
     $configDir = Join-Path $profileDir '.workbuddy'
     $instructionFile = Join-Path $configDir 'SOUL.md'
-    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；普通记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
+    $instruction = '每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；每次保存会话前询问是否保存及目标项目，只有用户明确同意并选定归属后才调用写入工具；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge'
 
     try {
       New-Item -ItemType Directory -Force -Path $configDir,(Join-Path $testRoot 'appdata'),(Join-Path $testRoot 'temp') | Out-Null

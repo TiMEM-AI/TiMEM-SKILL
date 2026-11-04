@@ -1,39 +1,20 @@
-# Memory workflow
+# 综合记忆工作流
 
-## General
+## 本次会话的保存确认
 
-### What belongs
+每次处理完用户的新请求，询问是否保存本次会话内容和目标项目：「这次会话要保存到太忆空间吗？如果保存，请指定个人项目，也可以选『未归类』。」
+用户已明确说「把这段保存到 X」时，这句话同时给出了本次授权和目标，无需重复询问。
+只说「保存」就只追问目标；只提到项目名称、读取记忆、绑定目录或讨论 Skill 行为，都不构成写入授权。
+同一轮中多个 Skill 只由一个入口询问一次。用户已拒绝本次保存时不要再问。
+用户拒绝、没有答复或项目尚不明确时，继续原任务，写入调用为零；不要排队补写。
+只提交用户这次同意的内容。授权在本次保存后用尽，后续新增内容或新会话重新询问；不要把确认消息本身作为新待存内容。
 
-- Personal preferences, role/background
-- **Durable office/topic facts** — decisions, owners, deadlines, meeting conclusions, product/project facts that will matter again across sessions
-- Life/work context that is not coding- or writing-specific
+用户确认保存后，使用个人 MCP 核对服务、账号及目标。对指定项目按名称查询候选、核对 UUID 并解析上下文；同名时请用户选择。已有绑定只能作为候选，不能代替本次选择或自动改写目录绑定。
+选定项目或明确选择「未归类」时，使用服务端支持的 personal-project-v1 上下文调用 `create_project_memory`，核对回执后再报告结果。项目工具不可用时停止，不能退回普通记忆或团队连接。
+仅当用户明确选择未归类、个人服务只提供旧版通用记忆工具且当前不在项目绑定模式时，才可按实际工具定义使用 `create_memory`。
 
-**Not:** a daily work log, process-only narration, or transient in-progress state.
+### 检索
 
-Static rules → **AGENTS.md** / **CLAUDE.md**.
-
-### Search
-
-**Default: search on every turn.** Call `search_memories` BEFORE answering — even if the user did not say remember/记得. Retrieval is cheap; missed context is expensive.
-
-1. `search_memories(query_text=<3–12 words>, limit=5)`
-2. Verify hits against the current conversation; abstain if stale or contradictory.
-
-**Do not under-call** — "I can answer directly" or "this is work not about the person" is not a skip reason.
-
-### Create
-
-**Default: create after answering.** The server extracts facts and dedups against history, so passing the raw turns is enough.
-
-- `create_memory(messages=[2–4 recent turns])`
-
-**No skip.** Create every turn — the server extracts facts and dedups against history, so even seemingly trivial turns may hold durable context. Passing the raw turns is enough.
-
-**Scope:** the server resolves scope from your API key.
-
-## Writing
-
-### Search workflow
 
 **Default: search** when prior style/audience may help. When unsure → search.
 
@@ -49,31 +30,3 @@ Static rules → **AGENTS.md** / **CLAUDE.md**.
 4. **Apply** — use verified constraints in the draft; abstain if hits are stale.
 
 **Do not under-call** — "I can draft without tools" is not a skip reason when style/audience may matter.
-
-### Create workflow
-
-**No skip.** Create every turn — the server extracts facts and dedups against history.
-
-1. **Call**:
-   ```
-   create_memory(
-     messages=[2–4 recent turns],
-   )
-   ```
-
-### Task end
-
-Create every turn; the server dedups, so prefer passing raw turns over manually gating.
-
-## Coding
-
-Coding uses `search_tier` and `memory_hint` parameters unique to that domain. See the dedicated references:
-
-- [search-tier.md](search-tier.md) — search_tier classification (S3 default, S0 recall, S6 delete)
-- [write-rubric.md](write-rubric.md) — create_memory gating and memory_hint types
-
-### Per-turn workflow (coding)
-
-1. **Search**: `search_memories(query_text=<3–12 words>, search_tier="S3", limit=5)` BEFORE exploratory codebase grep/read
-2. **Reply**: Generate reply using recalled context + fresh code/work context
-3. **Create**: `create_memory(memory_hint="<optional>", messages=[2–4 recent turns])` AFTER reply

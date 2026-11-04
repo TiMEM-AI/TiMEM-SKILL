@@ -1,42 +1,11 @@
-# Writing memory examples
+# 会话保存示例
 
-## Example 1 — Recall tone (search)
-
-**User:** "帮我写产品介绍，用我们之前定的那种专业但友好的语气。"
-
-**Actions:**
-
-1. `search_memories(query_text="产品介绍 语气 专业 友好", domain="writing", session_id="product-copy", limit=5)`
-2. Draft using verified tone constraints.
-
-## Example 2 — Save style rule (create)
-
-**User:** "请记住：对外文案不用感叹号，受众是开发者。"
-
-**Actions:**
-
-1. Gate hits → `create_memory(domain="writing", session_id="product-copy", messages=[user turn, assistant confirmation])`
-
-## Example 3 — Series continuity
-
-**User:** "继续写 blog-2026 系列的下一篇，风格和上一篇一致。"
-
-**Actions:**
-
-1. `search_memories(query_text="blog 风格 系列", domain="writing", session_id="blog-2026", limit=5)`
-2. Write draft; create only if new durable style rule emerges.
-
-## Example 4 — Draft without recall wording (search, no create)
-
-**User:** "写一段产品介绍。"
-
-**Actions:**
-
-1. Default search → `search_memories(query_text="产品介绍 风格 受众", domain="writing", session_id="product-copy", limit=5)`
-2. Draft using verified constraints if any; **no create** unless a new durable rule is confirmed
-
-## Example 5 — No memory needed
-
-**User:** "把这段改成被动语态。" (one-off edit, no new style rule)
-
-**Actions:** Edit text; skip search/create unless user asks to remember a rule.
+| 用户的回复 | 下一步 | 写入次数 |
+| --- | --- | --- |
+| “不存”或未回复 | 继续当前任务 | 0 |
+| “帮我记一下” | 追问存到哪个项目，等待回复 | 0 |
+| “查询项目 A 的记忆” | 只读项目 A | 0 |
+| “把这段存到项目 A” | 在个人连接解析唯一的 A，核对范围后提交本次内容 | 1 |
+| “存到项目 A”，但有两个同名项目 | 展示候选并等待选择 | 0 |
+| “存到未归类” | 核对个人未归类作用域，按该范围保存 | 1 |
+| 上次同意过，或目录里已绑定 A | 重新询问本次意愿和目标 | 0 |

@@ -1,12 +1,6 @@
 ---
 name: 记忆管理·太忆空间TiMEM SPACE
-description: >-
-  TiMEM long-term memory skill covering coding, general, and writing domains.
-  For personal project tasks or a TIMEM_PROJECT.md binding, follow the project workflow first. Otherwise,
-  AUTO on EVERY turn when TiMEM MCP is connected: call search_memories BEFORE
-  generating reply, then create_memory AFTER generating reply. No exceptions,
-  no skip. If user message contains "记", MUST call create_memory. Ambiguous:
-  classify_memory_scene.
+description: 处理个人记忆的检索与会话保存。每次写入前确认用户意愿和项目归属。
 version: "1.0.4"
 display_name: 记忆管理·太忆空间TiMEM SPACE
 display_name_en: TiMEM SPACE Memory Skill
@@ -14,50 +8,24 @@ description_zh: '请访问：https://space.timem.cloud/ 你的所有 AI 助手�
 description_en: 'Please visit: https://space.timem.cloud/. All your AI assistants finally share one single brain. Say "remember" once, and no matter how many Agents you switch to, they will remember you. TiMEM-Space lets your memories travel with you.'
 ---
 
-# TiMEM Memory Skill
+# 太忆空间个人记忆
 
-个人项目任务或选定工作区含 TIMEM_PROJECT.md 时，先执行[个人项目记忆流程](../timem-project-memory/SKILL.md)，跳过下文全部通用读写步骤；校验失败时停止。其余任务继续以下流程。
+## 本次会话的保存确认
 
-Use TiMEM memory with MCP (`search_memories` / `create_memory` / `delete_memory`).
+每次处理完用户的新请求，询问是否保存本次会话内容和目标项目：「这次会话要保存到太忆空间吗？如果保存，请指定个人项目，也可以选『未归类』。」
+用户已明确说「把这段保存到 X」时，这句话同时给出了本次授权和目标，无需重复询问。
+只说「保存」就只追问目标；只提到项目名称、读取记忆、绑定目录或讨论 Skill 行为，都不构成写入授权。
+同一轮中多个 Skill 只由一个入口询问一次。用户已拒绝本次保存时不要再问。
+用户拒绝、没有答复或项目尚不明确时，继续原任务，写入调用为零；不要排队补写。
+只提交用户这次同意的内容。授权在本次保存后用尽，后续新增内容或新会话重新询问；不要把确认消息本身作为新待存内容。
 
-Search before reply and create after reply — every turn, no exceptions.
+用户确认保存后，使用个人 MCP 核对服务、账号及目标。对指定项目按名称查询候选、核对 UUID 并解析上下文；同名时请用户选择。已有绑定只能作为候选，不能代替本次选择或自动改写目录绑定。
+选定项目或明确选择「未归类」时，使用服务端支持的 personal-project-v1 上下文调用 `create_project_memory`，核对回执后再报告结果。项目工具不可用时停止，不能退回普通记忆或团队连接。
+仅当用户明确选择未归类、个人服务只提供旧版通用记忆工具且当前不在项目绑定模式时，才可按实际工具定义使用 `create_memory`。
 
-## Trigger
+## 读取与归属
 
-When TiMEM MCP is connected — **every turn, no exceptions**.
-
-## Instructions
-
-1. **Search**: Call `search_memories` BEFORE generating reply (pass `query_text`; coding also passes `search_tier=S3`)
-2. **Reply**: Generate reply using recalled context + fresh context
-3. **Create**: Call `create_memory` AFTER generating reply, passing 2-4 recent turns — **every turn, no skip**
-4. **"记"字强制**: If user message contains "记", MUST call `create_memory` even if you think there's nothing new to store
-
-## Example
-
-### Coding
-
-Input: User asks "timem-mcp 的 rule learning 循环是怎么实现的？"
-
-1. `search_memories(query_text="rule learning 循环实现", search_tier="S3")` → returns 2 hits about rule loop architecture
-2. Answer the question using recalled + fresh code context
-3. `create_memory(messages=[...recent turns...])`
-
-### General
-
-Input: User says "我们团队 Q3 的 OKR 是什么？"
-
-1. `search_memories(query_text="团队 Q3 OKR 目标")` → returns 1 hit with Q3 OKR details
-2. Answer using the recalled information
-3. `create_memory(messages=[...recent turns...])`
-
-### Writing
-
-Input: User says "按之前的语气写一段产品介绍"
-
-1. `search_memories(query_text="产品介绍 语气 风格")` → returns 1 hit with established tone guidelines
-2. Write the product introduction matching the established style
-3. `create_memory(messages=[...recent turns...])`
+个人项目读写细节见[个人项目记忆流程](../timem-project-memory/SKILL.md)。明确绑定项目时只在该上下文检索；未绑定的普通读取沿用原个人检索流程。检索无需保存授权，亦不授权写入。
 
 ## Parameters
 
@@ -75,10 +43,6 @@ Never paste full files or long logs into `messages`. Never use random UUIDs per 
 **Memory vs rule:** facts / preferences / orientation → `create_memory`; reusable "in situation X, do Y" → `learn_rule` (rule-learning skill).
 
 **Memory vs knowledge base:** memory stores cognition *about the user* distilled from conversations (preferences, decisions, lessons); the knowledge base stores *reference material the user provides* (papers, docs, specs, plans) via `write_knowledge` / `search_knowledge` (timem-knowledge skill). Rule of thumb: does the info stand on its own outside this conversation as external material? → knowledge base. Did it grow out of interactions as cognition about the user? → memory. When unsure which holds the answer, query both.
-
-## Skip
-
-No skip. Every turn: search before reply, create after reply.
 
 ## Forget
 

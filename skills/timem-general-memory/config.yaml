@@ -1,8 +1,6 @@
 name: timem-general-memory
 version: 0.1.0
-description: >
-  TiMEM long-term memory for personal and office/general context (prefs, habits,
-  role/background, durable work facts). Auto on every turn when TiMEM MCP is connected.
+description: 通用场景个人记忆。保存前询问本次会话是否存储以及目标项目。
 triggers:
   - "general memory"
   - "personal memory"
