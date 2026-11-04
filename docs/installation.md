@@ -2,6 +2,8 @@
 
 Install [timem-mcp](https://pypi.org/project/timem-mcp/) first, then install one or more Agent Skills.
 
+For personal project memory, install `timem-project-memory` from the release bundle or run `python3 scripts/install.py --skill project --target agents --global` from a checkout. Select a personal Space MCP connection and verify the project before saving a workspace binding.
+
 ## Prerequisites
 
 - TiMEM MCP configured (`TiMEM_API_KEY`)

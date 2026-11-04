@@ -2,6 +2,7 @@
 name: 记忆管理·太忆空间TiMEM SPACE
 description: >-
   TiMEM long-term memory skill covering coding, general, and writing domains.
+  For personal project tasks or a TIMEM_PROJECT.md binding, follow the project workflow first. Otherwise,
   AUTO on EVERY turn when TiMEM MCP is connected: call search_memories BEFORE
   generating reply, then create_memory AFTER generating reply. No exceptions,
   no skip. If user message contains "记", MUST call create_memory. Ambiguous:
@@ -14,6 +15,8 @@ description_en: 'Please visit: https://space.timem.cloud/. All your AI assistant
 ---
 
 # TiMEM Memory Skill
+
+个人项目任务或选定工作区含 TIMEM_PROJECT.md 时，先执行[个人项目记忆流程](../timem-project-memory/SKILL.md)，跳过下文全部通用读写步骤；校验失败时停止。其余任务继续以下流程。
 
 Use TiMEM memory with MCP (`search_memories` / `create_memory` / `delete_memory`).
 
