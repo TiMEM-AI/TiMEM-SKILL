@@ -297,7 +297,9 @@ When `count=0`, read optional fields: `memory_gap`, `guidance`, `elevate_create`
 本次保存可以选择其他个人项目，须重新核对该项目上下文。已提交的操作始终保留原目标。
 
 发生临时故障后，重试必须复用相同的操作键、内容和上下文。
-写入结果不确定时，先查询对应范围内的操作回执，再决定是否重试。
+写入结果不确定时，先读取已有回执，再根据实际工具定义决定是否继续原操作。
+`get_project_memory_operation` 不是只读查询，可能继续远端任务、清理或结算；只在用户已授权该原操作的恢复范围内调用。
+用户仅要求查看状态时，使用实际暴露的只读入口；没有只读入口则说明当前已知回执，不冒充只读刷新调用恢复工具。
 连接对应的 Agent 改变后，使用原上下文和操作 ID 查询回执；不得把原写入改成新 Agent 的同键请求。
 遇到 `OPERATION_UNRESOLVED` 时，需要核对并处理原操作的实际结果；不得更换操作键或再次写入。
 同一操作持续无法核实时，保留操作 ID 并说明当前状态，不进行无限重试。
@@ -309,7 +311,7 @@ When `count=0`, read optional fields: `memory_gap`, `guidance`, `elevate_create`
 | `create_project_memory` | 传入 `context`、稳定的 `idempotency_key` 和 1–4 条 `user`/`assistant` 消息；保留原文 |
 | `search_project_memories` | 传入相同 `context`、查询文本和稳定操作键；默认最多 10 条 |
 | `delete_project_memory` | 使用已确认的本地记忆 ID、原 `context` 和稳定操作键，不使用猜测的云端 ID |
-| `get_project_memory_operation` | 使用回执中的 `operation_id` 与原 `context`，核对原操作或继续清理 |
+| `get_project_memory_operation` | 使用回执中的 `operation_id` 与原 `context` 显式继续原操作，可能清理或结算 |
 
 操作键不能为空，最长 48 个字符。
 更改内容属于新操作；相同操作键返回 `IDEMPOTENCY_CONFLICT` 时不得通过更换键掩盖一次结果不明的写入。
@@ -325,4 +327,11 @@ When `count=0`, read optional fields: `memory_gap`, `guidance`, `elevate_create`
 `index_status=pending_verification` 表示尚未确认可检索，即使 `persistence_status=persisted`。
 删除回执中的本地删除状态和云端清理状态也要分别说明；清理未完成时保留原操作 ID。
 排队、计费、持久化和索引完成是不同状态。
+收到 `receipt_version=2` 时，同时核对 `remote_status` 和 `recovery_action`：
+- `manual_review`：保留操作 ID 并停止自动恢复，不换键重写。
+- `await_funds`：说明需要补足积分；补足后才继续原操作，不自动充值。
+- `resume_original`、`cleanup_original`、`retry_settlement`：在原授权范围内使用原上下文和操作 ID 恢复，分别说明处理、清理或结算尚未完成。
+- `none`：不发起恢复；索引待验证时可独立检索，但不重复写入。
+`remote_status=unknown` 不能报告云端已保存；`not_applicable` 表示本次不涉及云端，不能报告云端索引已验证。
+旧回执缺少这些字段时，不推断远端成功；未知字段值按待人工核对处理。
 失败时，说明可安全展示的错误和保留的作用域；不得因为通用记忆写入成功，就承诺未来只检索当前项目。
