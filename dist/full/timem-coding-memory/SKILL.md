@@ -1,56 +1,31 @@
 ---
 name: timem-coding-memory
-description: >-
-  TiMEM long-term memory for coding context (decisions, lessons, conventions,
-  module/architecture orientation). AUTO on every coding turn when TiMEM MCP is
-  connected: call search_memories BEFORE exploratory codebase work, then
-  create_memory AFTER answering. Do not skip because "the repo might answer".
-  Skip only typo/single-line format fixes or pure trivia. Personal/office →
-  timem-general-memory; writing style/audience → timem-writing-memory.
+description: 代码场景的个人记忆检索和保存。首条消息询问是否持续逐条保存，同意后再确认项目或未归类。
 ---
 
-# TiMEM Coding Memory
+# 太忆代码记忆
 
-`domain=coding`. The server extracts facts and dedups against history — your job is only to call the tools every coding turn.
+## 本会话的逐条保存开关
 
-## Every coding turn (AUTO, no opt-in needed)
+1. 收到新会话首条用户消息时，先问一次：「从现在开始，要把本次会话的每条交流都保存到太忆空间吗？」此时不问项目、不写入。若用户首条已明确要求开始保存，直接进入下一步。
+2. 用户同意后，再问：「要归入哪个个人项目？没有项目可以说『未归类』。」用户说「没有项目」「没有」或「未归类」即选择未归类。用户已明确指定目标时跳过已回答的问题。沉默不代表未归类。
+3. 确认目标并校验成功后进入持续保存。首次同意覆盖首条请求起的业务交流；若此前拒绝或停止，则只从后来明确要求开始保存的那条消息起算。每轮将本轮新增的用户消息和可见助手答复按顺序提交给个人 MCP，不挑选“重要”内容，不重发整段历史。纯授权问答、工具输出及密钥不作为会话内容提交。
+4. 用户拒绝或尚未答复时，照常处理任务，写入调用为零，后续普通消息不再追问。用户后来明确说「从这条开始存」即可开启；缺少目标只追问归属。若明确限定「只存这一条」，仅保存指定内容，之后维持原开关状态。
+5. 用户说「停止保存」立即关闭。切换项目时先核对新目标，再保存后续内容。新会话重新询问；同一会话内所有个人记忆 Skill 共用一个开关、目标和写入进度。恢复时从本会话明确指令和已有回执判断；不得从目录绑定、上一次会话或本文示例推断授权。工具调用失败时按原操作键恢复。
 
-```
-1) search_memories   BEFORE exploratory grep/read — even if you could just read the code
-2) work              verify hits vs code/AGENTS.md; if count=0 read memory_gap / elevate_create
-3) create_memory     AFTER answering — pass 2–4 relevant turns
-```
+用户确认保存后，使用个人 MCP 核对服务、账号及目标。对指定项目按名称查询候选、核对 UUID 并解析上下文；同名时请用户选择。已有绑定只能作为候选，不能代替本次选择或自动改写目录绑定。
+选定项目或明确选择「未归类」时，使用服务端支持的 personal-project-v1 上下文调用 `create_project_memory`，核对回执后再报告结果。项目工具不可用时停止，不能退回普通记忆或团队连接。
+仅当用户明确选择未归类、个人服务只提供旧版通用记忆工具且当前不在项目绑定模式时，才可按实际工具定义使用 `create_memory`。
 
-Do **not** wait for "remember / 请记住". "I can just read the repo" is **not** a skip reason. Module/architecture/overview questions are coding turns — search, don't skip.
+项目读写按 timem-project-memory 的上下文校验流程执行。当前个人范围内沿用只读检索；没有已确定的项目读取范围时，不混用个人与团队连接。
 
-## search_tier (simplified)
-
-Default is `S3` for almost everything. Only two exceptions:
-
-| When | `search_tier` |
-|---|---|
-| Default — any coding turn with a known repo | `S3` |
-| User explicitly asks to recall ("你记得之前怎么定的吗") | `S0`, `limit=10` |
-| Before `delete_memory` (to get `memory_id`) | `S6` |
-
-No Must/Should/Skip classification. When unsure → `S3`.
-
-## Skip (narrow)
-
-| Skip search | Skip create |
-|---|---|
-| typo / single-line format fix | unverified guess (summarized without reading code) |
-| pure trivia ("Python list comprehension syntax") | transient debug state ("breakpoint at L42") |
-| user said "别搜" / "don't search" | nothing new vs. what you just searched |
-
-When in doubt → search. False positives are cheap, missed context is expensive.
+代码检索默认 S3，明确召回用 S0，删除前定位用 S6。
 
 ## Parameters
 
 | Field | Value |
 |---|---|
 | `domain` | `coding` |
-| `session_id` | **Required** — stable repo/project name (e.g. `timem-mcp`); never a random UUID |
 | `query_text` | 3–12 task-oriented words (required for search) |
 | `search_tier` | `S3` by default; see table above |
 | `messages` | 2–4 recent `{role, content}` turns; never paste full files or long logs |

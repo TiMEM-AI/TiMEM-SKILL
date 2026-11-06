@@ -259,10 +259,18 @@ def _assert_standalone_quality(text: str) -> None:
         raise SystemExit("Standalone must not contain AGENTS.md snippet section")
 
 
+def project_workflow() -> str:
+    source = ROOT / "skills" / "timem-project-memory" / "SKILL.md"
+    _, body = _split_frontmatter(source.read_text(encoding="utf-8"))
+    return body.strip() + "\n"
+
+
 def build_standalone_skill_md() -> str:
     skill_text = (SRC / "SKILL.md").read_text(encoding="utf-8")
     frontmatter, body = _split_frontmatter(skill_text)
-    body = _rewrite_body_for_standalone(body)
+    body = _rewrite_body_for_standalone(body).replace(
+        "[个人项目记忆流程](../timem-project-memory/SKILL.md)", "下文的个人项目记忆流程"
+    )
 
     parts = [
         frontmatter.rstrip() + "\n",
@@ -291,6 +299,7 @@ def build_standalone_skill_md() -> str:
         parts.append(content if content.endswith("\n") else content + "\n")
 
     # Do not inline AGENTS snippet into standalone (full package keeps assets/).
+    parts.append("\n" + _demote_headings(project_workflow()))
     return "".join(parts)
 
 
@@ -309,6 +318,11 @@ def build() -> None:
         raise SystemExit(f"Missing source skill: {SRC}")
 
     copy_full_package()
+    entry = DIST_FULL / "SKILL.md"
+    entry.write_text(entry.read_text(encoding="utf-8").replace(
+        "(../timem-project-memory/SKILL.md)", "(references/project-memory.md)"
+    ), encoding="utf-8")
+    (DIST_FULL / "references" / "project-memory.md").write_text(project_workflow(), encoding="utf-8")
     print(f"Wrote full package: {DIST_FULL.relative_to(ROOT)}")
     if not (DIST_FULL / "assets" / "agents-snippet.md").is_file():
         raise SystemExit("Full package missing assets/agents-snippet.md")

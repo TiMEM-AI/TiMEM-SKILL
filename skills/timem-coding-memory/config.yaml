@@ -1,8 +1,6 @@
 name: timem-coding-memory
 version: 0.1.0
-description: >
-  TiMEM long-term memory for coding context (decisions, lessons, conventions,
-  module/architecture orientation). Auto on every coding turn when TiMEM MCP is connected.
+description: 代码场景个人记忆。首条消息询问是否开启持续保存，同意后再选择归属。
 triggers:
   - "coding memory"
   - "search memories"

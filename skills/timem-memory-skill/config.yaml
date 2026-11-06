@@ -1,10 +1,7 @@
 name: timem-memory-skill
 version: 1.0.3
 
-description: >
-  TiMEM long-term memory skill covering coding, general, and writing domains.
-  Auto on every turn when TiMEM MCP is connected: search_memories before reply,
-  create_memory after reply. No exceptions, no skip.
+description: 综合场景个人记忆。首条消息询问是否开启持续保存，同意后再选择归属。
 triggers:
   - "coding memory"
   - "general memory"

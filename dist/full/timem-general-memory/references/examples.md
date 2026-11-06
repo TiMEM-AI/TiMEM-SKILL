@@ -1,33 +1,12 @@
-# General memory examples
+# 会话保存示例
 
-## Example 1 — Preference recall (search + create)
-
-**User:** "你记得我喜欢什么样的回答风格吗？"
-
-**Actions:** `search_memories(query_text="回答风格 偏好", domain="general", session_id="personal", limit=5)` → verify → answer → `create_memory(session_id="personal", messages=[this exchange])`.
-
-## Example 2 — Save preference (explicit remember)
-
-**User:** "请记住：以后解释技术问题用中文，尽量简洁。"
-
-**Actions:** search (optional dedup) → answer → `create_memory(domain="general", session_id="personal", messages=[...])`.
-
-## Example 3 — Trivia (skip both)
-
-**User:** "今天星期几？" → No search, no create.
-
-## Example 4 — Scoped topic
-
-**User:** "关于 TiMEM 产品，我们之前定的目标用户是谁？"
-
-**Actions:** `search_memories(query_text="TiMEM 目标用户", session_id="timem-product", limit=5)` → answer → create.
-
-## Example 5 — Personalized task without recall wording (search + create)
-
-**User:** "帮我写一段自我介绍。"
-
-**Actions:** Search `自我介绍 偏好 背景` (`session_id=personal`) → answer → create (the exchange may hold durable background).
-
-## Example 6 — Pure mood (skip create)
-
-**User:** "今天有点累，随便聊聊吧。" → Skip search. Skip create.
+| 会话中的事件 | 应有行为 |
+| --- | --- |
+| 新会话第一条业务消息 | 只问是否从现在起逐条保存；不写入 |
+| 回答「是」 | 只问目标；不写入 |
+| 随后回答「没有项目」 | 核对未归类；从首条业务消息开始保存 |
+| 已启用后继续交流 | 沿用目标，每轮只提交新增交流，不再询问 |
+| 首次回答「否」，接着讨论其他事情 | 持续不写入，不再询问 |
+| 之后说「从这条开始存到 A」 | 核对 A，从这一条起保存；以前的交流不补写 |
+| 已关闭时说「只把这条存到 A」 | 仅保存指定的一条，下一轮仍关闭 |
+| 新会话或仅检测到项目绑定 | 重新询问是否开启；不继承之前的同意 |

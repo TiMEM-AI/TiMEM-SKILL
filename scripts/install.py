@@ -15,6 +15,7 @@ SKILL_SOURCES: dict[str, Path] = {
     "coding-standalone": ROOT / "dist" / "standalone" / "timem-coding-memory",
     "general": ROOT / "dist" / "full" / "timem-general-memory",
     "general-standalone": ROOT / "dist" / "standalone" / "timem-general-memory",
+    "project": ROOT / "skills" / "timem-project-memory",
     "writing": ROOT / "skills" / "timem-writing-memory",
 }
 
@@ -48,12 +49,7 @@ def install(skill: str, dest_root: Path, force: bool) -> Path:
         raise SystemExit(f"Skill package not found: {src}\n{hint}")
 
     # Folder name must match skill `name` (agentskills.io).
-    if skill in ("coding", "coding-standalone"):
-        dest = dest_root / "timem-coding-memory"
-    elif skill in ("general", "general-standalone"):
-        dest = dest_root / "timem-general-memory"
-    else:
-        dest = dest_root / "timem-writing-memory"
+    dest = dest_root / src.name
 
     dest_root.mkdir(parents=True, exist_ok=True)
     if dest.exists():

@@ -5,7 +5,7 @@
 # 功能:
 #   - 自动检测已安装的 Agent 工具 (Claude Code, Codex, Cursor, OpenClaw, Hermes,
 #     Trae, WorkBuddy, Qoder, Claude Desktop)
-#   - 为每个 agent 安装 TiMEM Skills (5 个) + 合并 TiMEM MCP 配置 + 注入全局指令
+#   - 为每个 agent 安装 TiMEM Skills (6 个) + 合并 TiMEM MCP 配置 + 注入全局指令
 #   - 幂等: 重复安装安全，已有配置不覆盖，同名 skill 先 .bak 备份
 #   - 部分 agent 失败不影响其他，最后汇总
 #
@@ -15,7 +15,7 @@
 #
 # 参数:
 #   --api-key KEY       TiMEM API Key (默认读 $TIMEM_API_KEY 环境变量)
-#   --skills LIST       只安装指定 skill (逗号分隔，默认全部 5 个)
+#   --skills LIST       只安装指定 skill (逗号分隔，默认全部 6 个)
 #   --skip-mcp          跳过 MCP 配置，只装 skills
 #   --skip-skills       跳过 skills，只配 MCP
 #   --skip-agent-instructions  跳过已支持 Agent 的指令注入
@@ -37,7 +37,7 @@ set -uo pipefail
 TIMEM_COS_BASE_URL="https://careerfun-1257357192.cos.ap-beijing.myqcloud.com"
 TIMEM_CLOUD_URL="https://api.space.timem.cloud/mcp/"
 TIMEM_SERVER_NAME="TiMEM-SPACE"
-TIMEM_AGENT_INSTRUCTION="每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：记忆传输走 search_memories/create_memory；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
+TIMEM_AGENT_INSTRUCTION="每次对话都要查看 timem-memory 与 timem-knowledge 的 skill，并调用 TiMEM-SPACE 中合适的接口：个人项目任务或工作区有 TIMEM_PROJECT.md 时先用 timem-project-memory 核对个人范围，禁止调用通用记忆接口；新会话首条消息先问是否持续逐条保存；同意后再问个人项目或未归类；拒绝后保持关闭，直到用户主动要求开始保存；资料性内容（文档/论文/方案）的存取走知识库 search_knowledge/write_knowledge"
 TIMEM_INSTRUCTION_MARKER_REGEX='TiMEM-SPACE|太忆空间|timem-memory'
 CODEX_CONFIG_PATH="${CODEX_HOME:-}"
 if [ -z "$CODEX_CONFIG_PATH" ]; then
@@ -99,11 +99,12 @@ resolve_trae_mcp_config() {
 TRAE_MCP_CONFIG_PATH="$(resolve_trae_mcp_config)"
 TRAE_CONFIG_PATH="$(dirname "$TRAE_MCP_CONFIG_PATH")"
 
-# 5 个 TiMEM skills (TiMEM-SPACE MCP：记忆 + 知识库 + 规则工具): name:repo_relative_path
+# 6 个 TiMEM skills (TiMEM-SPACE MCP：记忆 + 知识库 + 规则工具): name:repo_relative_path
 ALL_SKILLS=(
   "timem-coding-memory:dist/standalone/timem-coding-memory"
   "timem-general-memory:dist/standalone/timem-general-memory"
   "timem-writing-memory:skills/timem-writing-memory"
+  "timem-project-memory:skills/timem-project-memory"
   "timem-knowledge:skills/timem-knowledge"
   "timem-rule-learning:skills/timem-rule-learning"
 )
@@ -1182,6 +1183,7 @@ interactive_select_skills() {
       timem-general-memory) desc="$(t "通用记忆" "General memory")" ;;
       timem-writing-memory) desc="$(t "写作记忆" "Writing memory")" ;;
       timem-knowledge)      desc="$(t "知识库" "Knowledge base")" ;;
+      timem-project-memory) desc="$(t "个人项目记忆" "Personal project memory")" ;;
       timem-rule-learning)  desc="$(t "规则学习" "Rule learning")" ;;
     esac
     printf "  [%d] %s (%s)\n" "$idx" "$skill_name" "$desc"

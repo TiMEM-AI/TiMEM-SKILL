@@ -1,42 +1,12 @@
-# Writing memory examples
+# 会话保存示例
 
-## Example 1 — Recall tone (search)
-
-**User:** "帮我写产品介绍，用我们之前定的那种专业但友好的语气。"
-
-**Actions:**
-
-1. `search_memories(query_text="产品介绍 语气 专业 友好", domain="writing", session_id="product-copy", limit=5)`
-2. Draft using verified tone constraints.
-
-## Example 2 — Save style rule (create)
-
-**User:** "请记住：对外文案不用感叹号，受众是开发者。"
-
-**Actions:**
-
-1. Gate hits → `create_memory(domain="writing", session_id="product-copy", messages=[user turn, assistant confirmation])`
-
-## Example 3 — Series continuity
-
-**User:** "继续写 blog-2026 系列的下一篇，风格和上一篇一致。"
-
-**Actions:**
-
-1. `search_memories(query_text="blog 风格 系列", domain="writing", session_id="blog-2026", limit=5)`
-2. Write draft; create only if new durable style rule emerges.
-
-## Example 4 — Draft without recall wording (search, no create)
-
-**User:** "写一段产品介绍。"
-
-**Actions:**
-
-1. Default search → `search_memories(query_text="产品介绍 风格 受众", domain="writing", session_id="product-copy", limit=5)`
-2. Draft using verified constraints if any; **no create** unless a new durable rule is confirmed
-
-## Example 5 — No memory needed
-
-**User:** "把这段改成被动语态。" (one-off edit, no new style rule)
-
-**Actions:** Edit text; skip search/create unless user asks to remember a rule.
+| 会话中的事件 | 应有行为 |
+| --- | --- |
+| 新会话第一条业务消息 | 只问是否从现在起逐条保存；不写入 |
+| 回答「是」 | 只问目标；不写入 |
+| 随后回答「没有项目」 | 核对未归类；从首条业务消息开始保存 |
+| 已启用后继续交流 | 沿用目标，每轮只提交新增交流，不再询问 |
+| 首次回答「否」，接着讨论其他事情 | 持续不写入，不再询问 |
+| 之后说「从这条开始存到 A」 | 核对 A，从这一条起保存；以前的交流不补写 |
+| 已关闭时说「只把这条存到 A」 | 仅保存指定的一条，下一轮仍关闭 |
+| 新会话或仅检测到项目绑定 | 重新询问是否开启；不继承之前的同意 |
